@@ -1,0 +1,31 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/KeyChainConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "id": "access-untrusted",
+    "description": "Wallet QA access certificate from an untrusted root",
+    "usageType": "access",
+    "kmsProvider": "db",
+    "keySource": {
+      "type": "private-jwk",
+      "jwk": {
+        "kty": "EC",
+        "x": "xosXdQb9ITyLSrKX3f2oDGRS7FfVvWxcpwxmnqlZRa4",
+        "y": "rlt3TGjUnsQVUxX26ChpJmcrONa6I6EnWjVXxoP3ZKM",
+        "crv": "P-256",
+        "d": "ixddS2cnL8BHUqsuJkSgxSm1GKH1ficSaXYmRgXnHoc",
+        "alg": "ES256",
+        "kid": "access-untrusted-active"
+      }
+    },
+    "crt": [
+      "-----BEGIN CERTIFICATE-----\nMIIBszCCAVigAwIBAgIUaxroM/HotU3+p4RkQ+Lo9JgiheAwCgYIKoZIzj0EAwIw\nJjEkMCIGA1UEAwwbV2FsbGV0IFFBIFVudHJ1c3RlZCBSb290IENBMB4XDTI2MTEx\nNDA5MTAyMVoXDTI3MTExNDA5MTAyMVowFDESMBAGA1UEAwwJbG9jYWxob3N0MFkw\nEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExosXdQb9ITyLSrKX3f2oDGRS7FfVvWxc\npwxmnqlZRa6uW3dMaNSexBVTFfboKGkmZys41rojoSdaNVfGg/dko6N2MHQwDAYD\nVR0TAQH/BAIwADAOBgNVHQ8BAf8EBAMCB4AwFAYDVR0RBA0wC4IJbG9jYWxob3N0\nMB0GA1UdDgQWBBTTwdCFTAaC1ch2yMa/GBEK3goRnzAfBgNVHSMEGDAWgBT+GxD1\ngiLv7Us/JCy3wY1oWowxYzAKBggqhkjOPQQDAgNJADBGAiEAy+I6NDRxprc3yGrI\n6lCDyp3p0gXxoZZquyMkG2PSe20CIQDzp3P6nbzHtKkYFjN+BGQhSGc1jBRs3VDf\nmPc2Er7JVQ==\n-----END CERTIFICATE-----\n",
+      "-----BEGIN CERTIFICATE-----\nMIIBsTCCAVegAwIBAgIUCnNqoC1sNmgjulQg7qGlrlmqOrQwCgYIKoZIzj0EAwIw\nJjEkMCIGA1UEAwwbV2FsbGV0IFFBIFVudHJ1c3RlZCBSb290IENBMB4XDTI2MTEx\nNDA5MTAyMVoXDTM2MTExMTA5MTAyMVowJjEkMCIGA1UEAwwbV2FsbGV0IFFBIFVu\ndHJ1c3RlZCBSb290IENBMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEFKYg/Gm2\nlF2rbNO0agWUKmHyU1MGA93jqBVoetIznG5/5X6Z42Ur9I3GRDRx7peOt8mOOCP0\ngN+4ZEfWGYjNDqNjMGEwHQYDVR0OBBYEFP4bEPWCIu/tSz8kLLfBjWhajDFjMB8G\nA1UdIwQYMBaAFP4bEPWCIu/tSz8kLLfBjWhajDFjMA8GA1UdEwEB/wQFMAMBAf8w\nDgYDVR0PAQH/BAQDAgEGMAoGCCqGSM49BAMCA0gAMEUCIC4cawoRLiXJvmJU+gk5\nd6FxrD8YQFdekxVVOsHjvW4XAiEAjDGo8L+9z/uyRSAig3Hhe9Lb2biLnNZ1XKfH\nZVnn09E=\n-----END CERTIFICATE-----\n"
+    ],
+    "rotationPolicy": {
+      "enabled": false
+    }
+  }
+}

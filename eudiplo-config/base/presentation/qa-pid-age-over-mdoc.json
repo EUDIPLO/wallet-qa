@@ -1,0 +1,31 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/PresentationConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "id": "qa-pid-age-over-mdoc",
+    "description": "QA PID (mso_mdoc): age_over_18 only",
+    "dcql_query": {
+      "credentials": [
+        {
+          "id": "pid-mso-mdoc",
+          "format": "mso_mdoc",
+          "meta": {
+            "doctype_value": "eu.europa.ec.eudi.pid.1"
+          },
+          "claims": [
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "age_over_18"
+              ],
+              "intent_to_retain": false
+            }
+          ]
+        }
+      ]
+    },
+    "accessKeyChainId": "access"
+  }
+}

@@ -1,0 +1,18 @@
+# OpenSSL config that generated deploy/tls/root.crt. Regenerate with:
+#   openssl ecparam -name prime256v1 -genkey -noout -out deploy/tls/root.key
+#   openssl req -new -x509 -sha256 -days 3650 -key deploy/tls/root.key -config deploy/tls/root.cnf -out deploy/tls/root.crt
+[ req ]
+distinguished_name = dn
+x509_extensions = v3_ca
+prompt = no
+
+[ dn ]
+CN = Wallet QA TLS Test Root
+O = Wallet QA test material, not a real CA
+
+[ v3_ca ]
+basicConstraints = critical, CA:TRUE
+keyUsage = critical, keyCertSign, cRLSign
+subjectKeyIdentifier = hash
+# Only ever valid for the loopback name the stack is served on.
+nameConstraints = critical, permitted;DNS:localhost

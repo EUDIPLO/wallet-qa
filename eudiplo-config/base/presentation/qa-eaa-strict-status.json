@@ -1,0 +1,32 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/PresentationConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "id": "qa-eaa-strict-status",
+    "description": "Event access attestation with a strict status-list check",
+    "statusCheckMode": "strict",
+    "dcql_query": {
+      "credentials": [
+        {
+          "id": "event-access-attestation",
+          "format": "dc+sd-jwt",
+          "meta": {
+            "vct_values": [
+              "urn:eudi:eaa:event-access-attestation:1"
+            ]
+          },
+          "claims": [
+            {
+              "path": [
+                "event_name"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "accessKeyChainId": "access"
+  }
+}

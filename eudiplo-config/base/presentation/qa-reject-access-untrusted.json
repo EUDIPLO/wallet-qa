@@ -1,0 +1,31 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/PresentationConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "id": "qa-reject-access-untrusted",
+    "description": "Loyalty card member ID requested while the access certificate chains to an untrusted root",
+    "accessKeyChainId": "access-untrusted",
+    "dcql_query": {
+      "credentials": [
+        {
+          "id": "card",
+          "format": "dc+sd-jwt",
+          "meta": {
+            "vct_values": [
+              "urn:eudi:eaa:loyalty-card:1"
+            ]
+          },
+          "claims": [
+            {
+              "path": [
+                "member_id"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

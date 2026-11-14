@@ -1,0 +1,61 @@
+{
+  "files.associations": {
+    "*.json": "json"
+  },
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "**/eudiplo-config/*/info.json"
+      ],
+      "url": "https://eudiplo.dev/schemas/v1/TenantConfigFile.schema.json"
+    },
+    {
+      "fileMatch": [
+        "**/eudiplo-config/*/registrar.json"
+      ],
+      "url": "https://eudiplo.dev/schemas/v1/RegistrarConfigFile.schema.json"
+    },
+    {
+      "fileMatch": [
+        "**/eudiplo-config/*/issuance/issuance.json"
+      ],
+      "url": "https://eudiplo.dev/schemas/v1/IssuanceConfigFile.schema.json"
+    },
+    {
+      "fileMatch": [
+        "**/eudiplo-config/*/issuance/credentials/*.json"
+      ],
+      "url": "https://eudiplo.dev/schemas/v1/CredentialConfigFile.schema.json"
+    },
+    {
+      "fileMatch": [
+        "**/eudiplo-config/*/key-chains/*.json"
+      ],
+      "url": "https://eudiplo.dev/schemas/v1/KeyChainConfigFile.schema.json"
+    },
+    {
+      "fileMatch": [
+        "**/eudiplo-config/*/presentation/*.json"
+      ],
+      "url": "https://eudiplo.dev/schemas/v1/PresentationConfigFile.schema.json"
+    },
+    {
+      "fileMatch": [
+        "**/eudiplo-config/*/clients/*.json"
+      ],
+      "url": "https://eudiplo.dev/schemas/v1/ClientConfigFile.schema.json"
+    },
+    {
+      "fileMatch": [
+        "**/eudiplo-config/*/trust-lists/*.json"
+      ],
+      "url": "https://eudiplo.dev/schemas/v1/TrustListConfigFile.schema.json"
+    },
+    {
+      "fileMatch": [
+        "**/eudiplo-config/*/issuance/status-lists/*.json"
+      ],
+      "url": "https://eudiplo.dev/schemas/v1/StatusListConfigFile.schema.json"
+    }
+  ]
+}

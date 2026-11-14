@@ -1,0 +1,31 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/KeyChainConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "id": "2f71c235-87e2-43c9-b572-739a3164ce95",
+    "description": "Wallet QA test access",
+    "usageType": "access",
+    "kmsProvider": "db",
+    "keySource": {
+      "type": "private-jwk",
+      "jwk": {
+        "kty": "EC",
+        "x": "qegXXc1zUTEOwmbSZn99jK7pM6K9NbF5YbIJerZlTMc",
+        "y": "YAr2EWRVbkB7dK0DZyI16GIsJjrKmBJpuFRKtgR2JyQ",
+        "crv": "P-256",
+        "d": "WP0QN_dFzHGoYQJ8c96dExFjfFjRBWQc3aqWIKwx31w",
+        "alg": "ES256",
+        "kid": "2f71c235-87e2-43c9-b572-739a3164ce95-active"
+      }
+    },
+    "crt": [
+      "-----BEGIN CERTIFICATE-----\nMIIBrjCCAVOgAwIBAgIUFzRBB7sHdTMZNp6X0s+fTHOr+HUwCgYIKoZIzj0EAwIw\nITEfMB0GA1UEAwwWV2FsbGV0IFFBIFRlc3QgUm9vdCBDQTAeFw0yNjExMTQwOTEw\nMjFaFw0yNzExMTQwOTEwMjFaMBQxEjAQBgNVBAMMCWxvY2FsaG9zdDBZMBMGByqG\nSM49AgEGCCqGSM49AwEHA0IABKnoF13Nc1ExDsJm0mZ/fYyu6TOivTWxeWGyCXq2\nZUzHYAr2EWRVbkB7dK0DZyI16GIsJjrKmBJpuFRKtgR2JySjdjB0MAwGA1UdEwEB\n/wQCMAAwDgYDVR0PAQH/BAQDAgeAMBQGA1UdEQQNMAuCCWxvY2FsaG9zdDAdBgNV\nHQ4EFgQU6DnqYJTnbfgY5NU5r4Ek4jCc0UgwHwYDVR0jBBgwFoAU9Bn0LQZXj0dy\na+zb7NbJJC34pk0wCgYIKoZIzj0EAwIDSQAwRgIhAIgeucY3FrzNJCzlu/4pZdaK\nTVFgOyoBMqSqhkK13NCRAiEAqYN9OQ2UTE3kNP1AyG/2S5+1S6oRct3tsApY4qOc\n1NM=\n-----END CERTIFICATE-----\n",
+      "-----BEGIN CERTIFICATE-----\nMIIBpjCCAU2gAwIBAgIUJEoPWuP0JqjFs7p6wDSUbDXCHAQwCgYIKoZIzj0EAwIw\nITEfMB0GA1UEAwwWV2FsbGV0IFFBIFRlc3QgUm9vdCBDQTAeFw0yNjExMTQwOTEw\nMjFaFw0zNjExMTEwOTEwMjFaMCExHzAdBgNVBAMMFldhbGxldCBRQSBUZXN0IFJv\nb3QgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATKfOyL4iJdIBQ4MJgqM1s6\nsVQyB5XYFzlocWESp0Jr6lB8RccZhsjAZgVnpMVq2zyUl4YB/OxRxFUnFkkzsUt3\no2MwYTAdBgNVHQ4EFgQU9Bn0LQZXj0dya+zb7NbJJC34pk0wHwYDVR0jBBgwFoAU\n9Bn0LQZXj0dya+zb7NbJJC34pk0wDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8E\nBAMCAQYwCgYIKoZIzj0EAwIDRwAwRAIgIXIx56wiEy7ViGwgWAs2/J4G7FJ4QH5u\n9yFKsqTKe60CIGuhpucQzhpm7jHc2HeYHkOhe6eGx75e0ojFXrJCgJBv\n-----END CERTIFICATE-----\n"
+    ],
+    "rotationPolicy": {
+      "enabled": false
+    }
+  }
+}

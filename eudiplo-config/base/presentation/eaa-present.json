@@ -1,0 +1,24 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/PresentationConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "id": "eaa-present",
+    "description": "present an sd jwt vc with no claims disclosed",
+    "dcql_query": {
+      "credentials": [
+        {
+          "id": "card",
+          "format": "dc+sd-jwt",
+          "meta": {
+            "vct_values": [
+              "urn:eudi:eaa:loyalty-card:1"
+            ]
+          }
+        }
+      ]
+    },
+    "accessKeyChainId": "access"
+  }
+}

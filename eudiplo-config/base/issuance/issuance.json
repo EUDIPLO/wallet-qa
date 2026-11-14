@@ -1,0 +1,42 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/IssuanceConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "authorizationServers": [
+      {
+        "id": "issuer-built-in",
+        "type": "built-in",
+        "label": "Wallet QA built-in AS",
+        "requireDPoP": false
+      },
+      {
+        "id": "mdl-pid-check",
+        "type": "oid4vp",
+        "label": "Driving licence authority (PID check)",
+        "presentationConfigId": "mdl-pid-check",
+        "requireDPoP": false
+      }
+    ],
+    "batchSize": 10,
+    "dPopRequired": false,
+    "walletAttestationRequired": false,
+    "display": [
+      {
+        "locale": "en-US",
+        "name": "EUDI Wallet dev",
+        "logo": {
+          "uri": "company.png"
+        }
+      },
+      {
+        "locale": "de-DE",
+        "name": "EUDI Wallet Entwicklung",
+        "logo": {
+          "uri": "company.png"
+        }
+      }
+    ]
+  }
+}

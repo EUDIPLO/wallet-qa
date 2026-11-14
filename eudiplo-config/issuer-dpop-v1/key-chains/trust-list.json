@@ -1,0 +1,31 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/KeyChainConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "id": "570852d7-7e7f-40af-a0e3-a6ebffd75ed0",
+    "description": "Wallet QA test trust-list",
+    "usageType": "trustList",
+    "kmsProvider": "db",
+    "keySource": {
+      "type": "private-jwk",
+      "jwk": {
+        "kty": "EC",
+        "x": "_i8YJpM9-yr-CTFUTuO2u0AGp7e25odIlfNAFDM1jcU",
+        "y": "mIgPMrqF769LB52v73QAVeN15sIXADp1TJQNn3wXYqQ",
+        "crv": "P-256",
+        "d": "L5nRD5bj6rAntDY1IBQZLUowhZLaPcuPRSHGMI1ENBE",
+        "alg": "ES256",
+        "kid": "570852d7-7e7f-40af-a0e3-a6ebffd75ed0-active"
+      }
+    },
+    "crt": [
+      "-----BEGIN CERTIFICATE-----\nMIIBrTCCAVOgAwIBAgIUFzRBB7sHdTMZNp6X0s+fTHOr+HgwCgYIKoZIzj0EAwIw\nITEfMB0GA1UEAwwWV2FsbGV0IFFBIFRlc3QgUm9vdCBDQTAeFw0yNjExMTQwOTEw\nMjFaFw0yNzExMTQwOTEwMjFaMBQxEjAQBgNVBAMMCWxvY2FsaG9zdDBZMBMGByqG\nSM49AgEGCCqGSM49AwEHA0IABP4vGCaTPfsq/gkxVE7jtrtABqe3tuaHSJXzQBQz\nNY3FmIgPMrqF769LB52v73QAVeN15sIXADp1TJQNn3wXYqSjdjB0MAwGA1UdEwEB\n/wQCMAAwDgYDVR0PAQH/BAQDAgeAMBQGA1UdEQQNMAuCCWxvY2FsaG9zdDAdBgNV\nHQ4EFgQUf5IcT7Yj9VHv83HaavknKzbWgAwwHwYDVR0jBBgwFoAU9Bn0LQZXj0dy\na+zb7NbJJC34pk0wCgYIKoZIzj0EAwIDSAAwRQIhAPtPZuzoH/LYrM3AYfqTJL5u\nN+t6a+tzhzWcBG0F87zDAiAcatRfwYKs4Vv1kM2oWYhT04KOyLCSgx69vUEMVmJM\ncw==\n-----END CERTIFICATE-----\n",
+      "-----BEGIN CERTIFICATE-----\nMIIBpjCCAU2gAwIBAgIUJEoPWuP0JqjFs7p6wDSUbDXCHAQwCgYIKoZIzj0EAwIw\nITEfMB0GA1UEAwwWV2FsbGV0IFFBIFRlc3QgUm9vdCBDQTAeFw0yNjExMTQwOTEw\nMjFaFw0zNjExMTEwOTEwMjFaMCExHzAdBgNVBAMMFldhbGxldCBRQSBUZXN0IFJv\nb3QgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATKfOyL4iJdIBQ4MJgqM1s6\nsVQyB5XYFzlocWESp0Jr6lB8RccZhsjAZgVnpMVq2zyUl4YB/OxRxFUnFkkzsUt3\no2MwYTAdBgNVHQ4EFgQU9Bn0LQZXj0dya+zb7NbJJC34pk0wHwYDVR0jBBgwFoAU\n9Bn0LQZXj0dya+zb7NbJJC34pk0wDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8E\nBAMCAQYwCgYIKoZIzj0EAwIDRwAwRAIgIXIx56wiEy7ViGwgWAs2/J4G7FJ4QH5u\n9yFKsqTKe60CIGuhpucQzhpm7jHc2HeYHkOhe6eGx75e0ojFXrJCgJBv\n-----END CERTIFICATE-----\n"
+    ],
+    "rotationPolicy": {
+      "enabled": false
+    }
+  }
+}

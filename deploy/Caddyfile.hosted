@@ -1,0 +1,28 @@
+# HTTPS front door of a hosted Wallet QA (docker-compose.hosted.yml). Caddy gets publicly
+# trusted certificates for both hostnames from Let's Encrypt, so phones need no test TLS root.
+# Both hostnames must resolve to this machine and ports 80 and 443 must be reachable.
+{
+    email {$ACME_EMAIL}
+}
+
+# Wallet QA: the tester page and its API behind basic auth. Paths the wallet itself calls
+# stay open: /protocol/* (fault request objects), /trust/* (test roots), /health/*.
+# /r/* stays open too, so a same-device redirect reaches Wallet QA; it only redirects to
+# the workspace page, which asks for the login.
+{$QA_HOST} {
+    encode gzip
+    @tester not path /protocol/* /trust/* /health/* /r/*
+    basic_auth @tester {
+        {$QA_AUTH_USER} {$QA_AUTH_HASH}
+    }
+    reverse_proxy {$QA_UPSTREAM:app:8787}
+}
+
+# EUDIPLO: only the wallet-facing protocol routes. Its management API lives under /api and
+# authenticates with the client secrets committed in this repository, so it is reachable
+# only from inside the stack (Wallet QA uses http://caddy:3000).
+{$EUDIPLO_HOST} {
+    @management path /api /api/*
+    respond @management 404
+    reverse_proxy {$EUDIPLO_UPSTREAM:localhost:3000}
+}

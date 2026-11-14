@@ -1,0 +1,16 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/ClientConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "clientId": "wallet-qa-dpop-client",
+    "secret": "wallet-qa-dpop-test-secret",
+    "description": "Test client",
+    "roles": [
+      "issuance:offer",
+      "presentation:request",
+      "presentation:manage"
+    ]
+  }
+}

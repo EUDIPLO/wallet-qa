@@ -1,0 +1,39 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/PresentationConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "id": "qa-loyalty-values-match",
+    "description": "Loyalty card whose issuing_country is DE (DCQL values filter that matches)",
+    "dcql_query": {
+      "credentials": [
+        {
+          "id": "card",
+          "format": "dc+sd-jwt",
+          "meta": {
+            "vct_values": [
+              "urn:eudi:eaa:loyalty-card:1"
+            ]
+          },
+          "claims": [
+            {
+              "path": [
+                "member_id"
+              ]
+            },
+            {
+              "path": [
+                "issuing_country"
+              ],
+              "values": [
+                "DE"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "accessKeyChainId": "access"
+  }
+}

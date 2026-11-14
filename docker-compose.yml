@@ -1,0 +1,109 @@
+# The Wallet QA stack: EUDIPLO (issuer/verifier), Wallet QA (service `app`), and Caddy
+# terminating HTTPS on localhost. Start it with:
+#
+#   docker compose -p wallet-qa up --build -d --wait
+#
+# The iOS simulator shares the Mac's loopback, so https://localhost:8443 (Wallet QA) and
+# https://localhost:3443 (EUDIPLO) work inside it once the Wallet QA TLS Test Root
+# (deploy/tls/root.crt) is trusted (scripts/trust-simulator.sh). An Android emulator
+# gets the same `localhost` through `adb reverse tcp:8443 tcp:8443` and `tcp:3443`.
+#
+# EUDIPLO runs inside Caddy's network namespace. EUDIPLO fetches its own
+# PUBLIC_URL (https://localhost:3443/.well-known/jwks.json/...) when it verifies an
+# access token issued by a chained authorization server (the PID-check mDL flow), and
+# "localhost" must therefore reach Caddy from inside the EUDIPLO container. Node trusts
+# the Wallet QA TLS Test Root through NODE_EXTRA_CA_CERTS.
+services:
+  caddy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    # Ports of the shared namespace: Caddy's HTTPS listeners plus EUDIPLO's plain port.
+    ports:
+      - '127.0.0.1:8443:8443'
+      - '127.0.0.1:3443:3443'
+      - '127.0.0.1:${EUDIPLO_HOST_PORT:-3000}:3000'
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/tls:/etc/caddy/tls:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    healthcheck:
+      # Ready once the CA is provisioned: the intermediate is the first thing Caddy
+      # writes after loading the committed root.
+      test: ['CMD', 'test', '-f', '/data/caddy/pki/authorities/local/intermediate.crt']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  eudiplo:
+    image: wallet-qa-eudiplo:local
+    build:
+      context: .
+      dockerfile: Dockerfile.eudiplo
+      args:
+        EUDIPLO_BASE_IMAGE_TAG: ${EUDIPLO_VERSION:-8.1.0}
+        CONFIG_SOURCE: ${EUDIPLO_CONFIG_SOURCE:-eudiplo-config}
+    restart: unless-stopped
+    network_mode: 'service:caddy'
+    environment:
+      PUBLIC_URL: ${EUDIPLO_PUBLIC_URL:-https://localhost:3443}
+      NODE_EXTRA_CA_CERTS: /etc/wallet-qa-tls/root.crt
+      MASTER_SECRET: ${EUDIPLO_MASTER_SECRET:?Set EUDIPLO_MASTER_SECRET}
+      AUTH_CLIENT_ID: ${EUDIPLO_ADMIN_CLIENT_ID:-root}
+      AUTH_CLIENT_SECRET: ${EUDIPLO_ADMIN_CLIENT_SECRET:?Set EUDIPLO_ADMIN_CLIENT_SECRET}
+      CONFIG_IMPORT_MODE: upsert
+      CONFIG_VARIABLE_STRICT: abort
+      SESSION_TTL: 604800
+      SESSION_TIDY_UP_INTERVAL: 3600
+      SESSION_CLEANUP_MODE: full
+      LOG_LEVEL: debug
+      LOG_SESSION_STORE: off
+      LOG_ENABLE_HTTP_LOGGER: 'true'
+      LOG_ENABLE_SESSION_LOGGER: 'true'
+    volumes:
+      - eudiplo-uploads:/app/uploads
+      - ./deploy/tls/root.crt:/etc/wallet-qa-tls/root.crt:ro
+    depends_on:
+      caddy: { condition: service_healthy }
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+
+  app:
+    image: wallet-qa:local
+    build:
+      context: .
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8787
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://localhost:8443}
+      # Same-device presentations return to /r/<session> and from there to the run.
+      REDIRECT_URI: ${PUBLIC_ORIGIN:-https://localhost:8443}/r/{sessionId}
+      # EUDIPLO listens in the caddy service's network namespace.
+      EUDIPLO_BASE_URL: http://caddy:3000
+      EUDIPLO_PUBLIC_URL: ${EUDIPLO_PUBLIC_URL:-https://localhost:3443}
+      QA_BACKENDS_FILE: /app/config/eudiplo-backends.json
+      EUDIPLO_VERSION: ${EUDIPLO_VERSION:-8.1.0}
+      QA_DATA_FILE: /app/data/runs.json
+      QA_RETENTION_HOURS: ${QA_RETENTION_HOURS:-168}
+    volumes:
+      - qa-data:/app/data
+    ports: ['127.0.0.1:8787:8787']
+    depends_on:
+      eudiplo: { condition: service_healthy }
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://localhost:8787/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  eudiplo-uploads:
+  qa-data:
+  caddy-data:
+  caddy-config:

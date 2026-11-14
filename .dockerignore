@@ -1,0 +1,16 @@
+node_modules
+dist
+dist-server
+.git
+.gitignore
+.vscode
+.wrangler
+
+.env
+.env.*
+.pnpm-store
+data
+fixtures/ca
+
+# TLS root and key: Caddy reads them from a bind mount, never from an image.
+deploy/

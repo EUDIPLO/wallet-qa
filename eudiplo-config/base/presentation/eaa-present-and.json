@@ -1,0 +1,67 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/PresentationConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "id": "eaa-present-and",
+    "description": "present the card and the event access attestation",
+    "dcql_query": {
+      "credentials": [
+        {
+          "id": "card",
+          "format": "dc+sd-jwt",
+          "meta": {
+            "vct_values": [
+              "urn:eudi:eaa:loyalty-card:1"
+            ]
+          },
+          "claims": [
+            {
+              "path": [
+                "member_id"
+              ]
+            },
+            {
+              "path": [
+                "membership_tier"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "event-access-attestation",
+          "format": "dc+sd-jwt",
+          "meta": {
+            "vct_values": [
+              "urn:eudi:eaa:event-access-attestation:1"
+            ]
+          },
+          "claims": [
+            {
+              "path": [
+                "event_name"
+              ]
+            },
+            {
+              "path": [
+                "valid_until"
+              ]
+            }
+          ]
+        }
+      ],
+      "credential_sets": [
+        {
+          "options": [
+            [
+              "card",
+              "event-access-attestation"
+            ]
+          ]
+        }
+      ]
+    },
+    "accessKeyChainId": "access"
+  }
+}

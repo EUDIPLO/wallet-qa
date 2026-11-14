@@ -1,0 +1,12 @@
+ARG EUDIPLO_BASE_IMAGE_TAG=8.1.0
+FROM ghcr.io/openwallet-foundation/eudiplo:${EUDIPLO_BASE_IMAGE_TAG}
+# CONFIG_SOURCE is the tenant root copied into the image; subdirectories become tenant IDs.
+ARG CONFIG_SOURCE=eudiplo-config
+COPY ${CONFIG_SOURCE}/ /app/config/config/
+ENV CONFIG_FOLDER=/app/config/config
+ENV CONFIG_IMPORT_MODE=upsert
+# Applies a hosted instance's trust material (key chains, registrar.json) on top of the
+# config above; a no-op locally. See scripts/eudiplo-entrypoint.sh.
+COPY scripts/eudiplo-entrypoint.sh /app/wallet-qa-entrypoint.sh
+ENTRYPOINT ["/app/wallet-qa-entrypoint.sh"]
+CMD ["node", "dist/main.js"]

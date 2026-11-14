@@ -1,0 +1,32 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/PresentationConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "id": "qa-pid-one-sd-jwt-vc",
+    "description": "QA PID (dc+sd-jwt): given_name only",
+    "statusCheckMode": "strict",
+    "dcql_query": {
+      "credentials": [
+        {
+          "id": "pid-sd-jwt",
+          "format": "dc+sd-jwt",
+          "meta": {
+            "vct_values": [
+              "urn:eudi:pid:de:1"
+            ]
+          },
+          "claims": [
+            {
+              "path": [
+                "given_name"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "accessKeyChainId": "access"
+  }
+}

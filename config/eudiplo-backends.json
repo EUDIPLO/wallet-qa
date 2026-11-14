@@ -1,0 +1,26 @@
+[
+  {
+    "id": "default",
+    "description": "Main issuer and verifier: PID, loyalty, event and mixed credentials, all presentation and rejection tests.",
+    "instanceId": "shared-eudiplo",
+    "tenantId": "base",
+    "configVersion": "localhost-default-v2",
+    "eudiploVersion": "${EUDIPLO_VERSION:8.1.0}",
+    "baseUrl": "${EUDIPLO_BASE_URL:http://localhost:3000}",
+    "publicUrl": "${EUDIPLO_PUBLIC_URL:https://localhost:3443}",
+    "clientId": "test-client",
+    "clientSecret": "wallet-qa-default-test-secret"
+  },
+  {
+    "id": "dpop-v1",
+    "description": "Issuer that requires DPoP-bound access tokens (I-DPOP).",
+    "instanceId": "shared-eudiplo",
+    "tenantId": "issuer-dpop-v1",
+    "configVersion": "localhost-dpop-v1",
+    "eudiploVersion": "${EUDIPLO_VERSION:8.1.0}",
+    "baseUrl": "${EUDIPLO_BASE_URL:http://localhost:3000}",
+    "publicUrl": "${EUDIPLO_PUBLIC_URL:https://localhost:3443}",
+    "clientId": "wallet-qa-dpop-client",
+    "clientSecret": "wallet-qa-dpop-test-secret"
+  }
+]

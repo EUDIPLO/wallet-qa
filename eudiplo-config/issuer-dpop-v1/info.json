@@ -1,0 +1,10 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/TenantConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "name": "Wallet QA DPoP issuer",
+    "description": "Version 1 issuer profile requiring DPoP for positive wallet tests"
+  }
+}

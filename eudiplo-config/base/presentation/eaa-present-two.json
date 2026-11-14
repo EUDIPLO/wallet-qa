@@ -1,0 +1,62 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/PresentationConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "id": "eaa-present-two",
+    "description": "present two sd jwt vcs",
+    "dcql_query": {
+      "credentials": [
+        {
+          "id": "card",
+          "format": "dc+sd-jwt",
+          "meta": {
+            "vct_values": [
+              "urn:eudi:eaa:loyalty-card:1"
+            ]
+          },
+          "claims": [
+            {
+              "path": [
+                "member_id"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "event-access-attestation",
+          "format": "dc+sd-jwt",
+          "meta": {
+            "vct_values": [
+              "urn:eudi:eaa:event-access-attestation:1"
+            ]
+          },
+          "claims": [
+            {
+              "path": [
+                "event_name"
+              ]
+            },
+            {
+              "path": [
+                "access_type"
+              ]
+            }
+          ]
+        }
+      ],
+      "credential_sets": [
+        {
+          "options": [
+            [
+              "card",
+              "event-access-attestation"
+            ]
+          ]
+        }
+      ]
+    },
+    "accessKeyChainId": "access"
+  }
+}

@@ -1,0 +1,30 @@
+# HTTPS front door of the stack: the wallet's OpenID4VCI library refuses plain-http
+# issuers. Certificates come from Caddy's internal CA, rooted in the committed Wallet QA TLS
+# Test Root (deploy/tls). The root never changes between runs, so simulators, emulators
+# and the wallets' dev builds trust it once; Caddy still issues and renews the short-lived
+# leaf certificates itself.
+#
+# The placeholders default to the Docker layout (docker-compose.yml: TLS directory mounted
+# at /etc/caddy/tls, Wallet QA reachable as `app`, EUDIPLO in Caddy's own network
+# namespace); set them to run Caddy outside Docker.
+{
+    pki {
+        ca local {
+            name "Wallet QA TLS Test CA"
+            root {
+                cert {$QA_TLS_DIR:/etc/caddy/tls}/root.crt
+                key {$QA_TLS_DIR:/etc/caddy/tls}/root.key
+            }
+        }
+    }
+}
+
+localhost:8443 {
+    tls internal
+    reverse_proxy {$QA_UPSTREAM:app:8787}
+}
+
+localhost:3443 {
+    tls internal
+    reverse_proxy {$EUDIPLO_UPSTREAM:localhost:3000}
+}

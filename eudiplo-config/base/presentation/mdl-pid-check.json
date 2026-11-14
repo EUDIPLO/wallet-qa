@@ -1,0 +1,51 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/PresentationConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "id": "mdl-pid-check",
+    "description": "PID check performed by the driving licence authority before issuing an mDL (authorization step of issue-mdl-pid-auth)",
+    "dcql_query": {
+      "credentials": [
+        {
+          "id": "pid-sd-jwt",
+          "format": "dc+sd-jwt",
+          "meta": {
+            "vct_values": [
+              "urn:eudi:pid:de:1"
+            ]
+          },
+          "claims": [
+            {
+              "path": [
+                "given_name"
+              ]
+            },
+            {
+              "path": [
+                "family_name"
+              ]
+            },
+            {
+              "path": [
+                "birthdate"
+              ]
+            }
+          ]
+        }
+      ],
+      "credential_sets": [
+        {
+          "options": [
+            [
+              "pid-sd-jwt"
+            ]
+          ]
+        }
+      ]
+    },
+    "statusCheckMode": "disabled",
+    "accessKeyChainId": "access"
+  }
+}

@@ -1,0 +1,164 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/PresentationConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "id": "qa-pid-all-mdoc",
+    "description": "QA PID (mso_mdoc): every data element of the QA PID",
+    "dcql_query": {
+      "credentials": [
+        {
+          "id": "pid-mso-mdoc",
+          "format": "mso_mdoc",
+          "meta": {
+            "doctype_value": "eu.europa.ec.eudi.pid.1"
+          },
+          "claims": [
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "family_name"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "given_name"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "birth_date"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "age_over_12"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "age_over_14"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "age_over_16"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "age_over_18"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "age_over_21"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "age_over_65"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "age_in_years"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "age_birth_year"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "family_name_birth"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "birth_place"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "nationality"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "resident_street"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "resident_postal_code"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "resident_city"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "resident_country"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "issuing_authority"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "issuing_country"
+              ],
+              "intent_to_retain": false
+            }
+          ]
+        }
+      ]
+    },
+    "accessKeyChainId": "access"
+  }
+}

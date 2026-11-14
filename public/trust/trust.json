@@ -1,0 +1,13 @@
+{
+  "profile": "Wallet QA development trust; not production EUDI certification",
+  "eudiploHost": "localhost",
+  "tenants": [
+    "base",
+    "issuer-dpop-v1"
+  ],
+  "rootCertificate": "test-root.pem",
+  "rootCertificateDer": "wallet-qa-test-root.der",
+  "sha256": "9E:A2:B6:58:F5:9A:6C:CF:DE:B0:9E:20:D9:3D:95:95:D2:49:29:E9:F2:7F:39:EC:C5:91:E1:24:5D:3B:60:46",
+  "validUntil": "Nov 11 09:10:21 2036 GMT",
+  "instructions": "Install this root as a test trust anchor in your wallet. Leaf certificates last 365 days. TLS trust is configured separately."
+}

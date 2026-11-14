@@ -1,0 +1,87 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/PresentationConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "id": "qa-pid-all-sd-jwt-vc",
+    "description": "QA PID (dc+sd-jwt): every claim, including the nested address, place_of_birth and age_equal_or_over objects",
+    "statusCheckMode": "strict",
+    "dcql_query": {
+      "credentials": [
+        {
+          "id": "pid-sd-jwt",
+          "format": "dc+sd-jwt",
+          "meta": {
+            "vct_values": [
+              "urn:eudi:pid:de:1"
+            ]
+          },
+          "claims": [
+            {
+              "path": [
+                "family_name"
+              ]
+            },
+            {
+              "path": [
+                "given_name"
+              ]
+            },
+            {
+              "path": [
+                "birthdate"
+              ]
+            },
+            {
+              "path": [
+                "address"
+              ]
+            },
+            {
+              "path": [
+                "place_of_birth"
+              ]
+            },
+            {
+              "path": [
+                "nationalities"
+              ]
+            },
+            {
+              "path": [
+                "age_equal_or_over"
+              ]
+            },
+            {
+              "path": [
+                "age_in_years"
+              ]
+            },
+            {
+              "path": [
+                "age_birth_year"
+              ]
+            },
+            {
+              "path": [
+                "issuing_authority"
+              ]
+            },
+            {
+              "path": [
+                "issuing_country"
+              ]
+            },
+            {
+              "path": [
+                "source_document_type"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "accessKeyChainId": "access"
+  }
+}

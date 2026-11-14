@@ -1,0 +1,24 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/PresentationConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "id": "eaa-reject-not-available",
+    "description": "request a credential type that is not issued to trigger rejection",
+    "dcql_query": {
+      "credentials": [
+        {
+          "id": "not-available-credential",
+          "format": "dc+sd-jwt",
+          "meta": {
+            "vct_values": [
+              "urn:eudi:eaa:diploma:1"
+            ]
+          }
+        }
+      ]
+    },
+    "accessKeyChainId": "access"
+  }
+}

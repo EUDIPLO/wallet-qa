@@ -1,0 +1,72 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/PresentationConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "id": "qa-pid-either",
+    "description": "QA PID as dc+sd-jwt or mso_mdoc, wallet picks",
+    "statusCheckMode": "strict",
+    "dcql_query": {
+      "credentials": [
+        {
+          "id": "pid-sd-jwt",
+          "format": "dc+sd-jwt",
+          "meta": {
+            "vct_values": [
+              "urn:eudi:pid:de:1"
+            ]
+          },
+          "claims": [
+            {
+              "path": [
+                "given_name"
+              ]
+            },
+            {
+              "path": [
+                "family_name"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "pid-mso-mdoc",
+          "format": "mso_mdoc",
+          "meta": {
+            "doctype_value": "eu.europa.ec.eudi.pid.1"
+          },
+          "claims": [
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "given_name"
+              ],
+              "intent_to_retain": false
+            },
+            {
+              "path": [
+                "eu.europa.ec.eudi.pid.1",
+                "family_name"
+              ],
+              "intent_to_retain": false
+            }
+          ]
+        }
+      ],
+      "credential_sets": [
+        {
+          "options": [
+            [
+              "pid-sd-jwt"
+            ],
+            [
+              "pid-mso-mdoc"
+            ]
+          ]
+        }
+      ]
+    },
+    "accessKeyChainId": "access"
+  }
+}

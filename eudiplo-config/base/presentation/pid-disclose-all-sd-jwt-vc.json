@@ -1,0 +1,104 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/PresentationConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "id": "pid-disclose-all-sd-jwt-vc",
+    "description": "present a pid with all primary identity attributes disclosed (sd-jwt-vc)",
+    "dcql_query": {
+      "credentials": [
+        {
+          "id": "pid-sd-jwt",
+          "format": "dc+sd-jwt",
+          "meta": {
+            "vct_values": [
+              "urn:eudi:pid:de:1"
+            ]
+          },
+          "claims": [
+            {
+              "path": [
+                "given_name"
+              ]
+            },
+            {
+              "path": [
+                "family_name"
+              ]
+            },
+            {
+              "path": [
+                "birthdate"
+              ]
+            },
+            {
+              "path": [
+                "address",
+                "locality"
+              ]
+            },
+            {
+              "path": [
+                "address",
+                "postal_code"
+              ]
+            },
+            {
+              "path": [
+                "address",
+                "street_address"
+              ]
+            },
+            {
+              "path": [
+                "nationalities"
+              ]
+            },
+            {
+              "path": [
+                "age_equal_or_over",
+                "12"
+              ]
+            },
+            {
+              "path": [
+                "age_equal_or_over",
+                "16"
+              ]
+            },
+            {
+              "path": [
+                "age_equal_or_over",
+                "18"
+              ]
+            },
+            {
+              "path": [
+                "age_equal_or_over",
+                "21"
+              ]
+            },
+            {
+              "path": [
+                "age_equal_or_over",
+                "65"
+              ]
+            }
+          ]
+        }
+      ],
+      "credential_sets": [
+        {
+          "options": [
+            [
+              "pid-sd-jwt"
+            ]
+          ]
+        }
+      ]
+    },
+    "statusCheckMode": "disabled",
+    "accessKeyChainId": "access"
+  }
+}
