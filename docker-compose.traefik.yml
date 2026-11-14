@@ -1,0 +1,80 @@
+# Hosted Wallet QA behind an existing Traefik (instead of the bundled Caddy). Applied on top
+# of docker-compose.yml:
+#
+#   docker compose -p wallet-qa --env-file .env.traefik \
+#     -f docker-compose.yml -f docker-compose.traefik.yml up --build -d --wait
+#
+# Traefik must run on the same host with the Docker provider, be attached to the external
+# network TRAEFIK_NETWORK, and have the entrypoint TRAEFIK_ENTRYPOINT (HTTPS) and the
+# certificate resolver TRAEFIK_CERTRESOLVER. The labels below do what deploy/Caddyfile.hosted
+# does for the Caddy setup:
+#   - QA_HOST: Wallet QA behind basic auth, except the paths wallets call themselves
+#     (/protocol/*, /trust/*, /health/*, /r/*).
+#   - EUDIPLO_HOST: EUDIPLO without its management API (/api has no router, so Traefik
+#     answers 404). Wallet QA reaches /api inside the stack at http://eudiplo:3000.
+# Config, overlay and volumes are the same as in docker-compose.hosted.yml; see docs/hosting.md.
+services:
+  # Not used here; the profile is never activated.
+  caddy:
+    profiles: [caddy]
+
+  eudiplo:
+    network_mode: !reset null
+    networks: [default, traefik]
+    depends_on: !reset {}
+    # EUDIPLO's plain port on loopback for `pnpm smoke` on the host.
+    ports:
+      - '127.0.0.1:${EUDIPLO_HOST_PORT:-3000}:3000'
+    environment:
+      PUBLIC_URL: https://${EUDIPLO_HOST:?Set EUDIPLO_HOST}
+      LOG_LEVEL: info
+      # SQLite database on its own volume; the tenant config keeps coming from the image.
+      FOLDER: /app/data
+    volumes:
+      - eudiplo-db:/app/data
+      # Files that replace or add to the tenant config from git (scripts/eudiplo-entrypoint.sh).
+      - ${QA_FIXTURES_DIR:?Set QA_FIXTURES_DIR}/overlay:/app/config-overlay:ro
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: ${TRAEFIK_NETWORK:-traefik}
+      traefik.http.routers.wallet-qa-eudiplo.rule: Host(`${EUDIPLO_HOST}`) && !PathPrefix(`/api`)
+      traefik.http.routers.wallet-qa-eudiplo.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.wallet-qa-eudiplo.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      traefik.http.services.wallet-qa-eudiplo.loadbalancer.server.port: '3000'
+
+  app:
+    networks: [default, traefik]
+    environment:
+      PUBLIC_ORIGIN: https://${QA_HOST:?Set QA_HOST}
+      REDIRECT_URI: https://${QA_HOST}/r/{sessionId}
+      EUDIPLO_BASE_URL: http://eudiplo:3000
+      EUDIPLO_PUBLIC_URL: https://${EUDIPLO_HOST}
+    volumes:
+      - ${QA_FIXTURES_DIR}/public:/app/dist/public/trust:ro
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: ${TRAEFIK_NETWORK:-traefik}
+      traefik.http.services.wallet-qa-app.loadbalancer.server.port: '8787'
+      # Paths wallets call: no login.
+      traefik.http.routers.wallet-qa-open.rule: Host(`${QA_HOST}`) && (PathPrefix(`/protocol/`) || PathPrefix(`/trust/`) || PathPrefix(`/health/`) || PathPrefix(`/r/`))
+      traefik.http.routers.wallet-qa-open.priority: '200'
+      traefik.http.routers.wallet-qa-open.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.wallet-qa-open.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      traefik.http.routers.wallet-qa-open.service: wallet-qa-app
+      # Everything else: the team login.
+      traefik.http.routers.wallet-qa.rule: Host(`${QA_HOST}`)
+      traefik.http.routers.wallet-qa.priority: '100'
+      traefik.http.routers.wallet-qa.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.wallet-qa.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      traefik.http.routers.wallet-qa.service: wallet-qa-app
+      traefik.http.routers.wallet-qa.middlewares: wallet-qa-auth
+      traefik.http.middlewares.wallet-qa-auth.basicauth.users: ${QA_AUTH_USER:?Set QA_AUTH_USER}:${QA_AUTH_HASH:?Set QA_AUTH_HASH}
+      traefik.http.middlewares.wallet-qa-auth.basicauth.removeheader: 'true'
+
+networks:
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik}
+
+volumes:
+  eudiplo-db:

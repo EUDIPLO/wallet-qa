@@ -11,7 +11,8 @@ It is part of the [EUDIPLO](https://github.com/EUDIPLO) project and licensed und
 **Testers:** start with the [tester guide](docs/tester-guide.md). It covers starting the
 stack, setting up a simulator or phone, running tests and handing in reports. The rest of
 this README is for people who run or develop Wallet QA. To run a shared instance on a
-public hostname (the easy setup for testers), see [docs/hosting.md](docs/hosting.md). An
+public hostname (the easy setup for testers), with the bundled Caddy or behind an existing
+Traefik, see [docs/hosting.md](docs/hosting.md). An
 instance is one EUDIPLO with a fixed set of tenants for one wallet trust setup; the start page
 shows it under **This instance**.
 
