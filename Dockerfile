@@ -16,7 +16,9 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/config ./config
 
 # Run as the image's unprivileged `node` user (uid 1000), which owns the run store in /app/data.
-RUN mkdir -p /app/data && chown node:node /app/data
+# The copied files keep the checkout's modes; a checkout made with a restrictive umask would
+# leave them unreadable for `node`, so make the application files world-readable.
+RUN mkdir -p /app/data && chown node:node /app/data && chmod -R a+rX /app/dist /app/config
 USER node
 EXPOSE 8787
 CMD ["node", "dist/server/server.js"]
