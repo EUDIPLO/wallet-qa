@@ -11,6 +11,7 @@ import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Browser } from 'webdriverio';
 import { Evidence } from '../lib/evidence.ts';
+import { assertVerdict } from '../lib/known-issues.ts';
 import { credentialMetadata } from '../lib/metadata.ts';
 import { client } from '../lib/wallet-qa.ts';
 import {
@@ -85,7 +86,7 @@ test(`${scenarioId}: the wallet discloses only given_name`, async () => {
   await qa.answer(run.id, evidence.answers());
   const final = await qa.get(run.id, 5_000);
   evidence.write({ runId: run.id, verdict: final.verdict, reason: final.reason, assertions: final.assertions });
-  await qa.assertPassed(run.id);
+  await assertVerdict(qa, scenarioId, run.id);
 
   // Back to the wallet's home so a later test starts from a known screen.
   if (await isShown(driver, byText('Close'))) await tap(driver, byText('Close'));

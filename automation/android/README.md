@@ -23,7 +23,7 @@ move to another repository. The only links to Wallet QA are `lib/wallet-qa.ts` (
 | `scripts/emulator-check.sh` | `adb reverse` for ports 8443/3443 and a reachability check from the emulator |
 | `scripts/run-tests.sh` | Installs the APK, starts Appium, runs the tests, collects logs |
 | `tests/` | `01-onboarding`, `02-issue-pid-sdjwt`, `03-present-pid-one-sdjwt`, run in this order |
-| `lib/` | Appium session and selectors, evidence capture, Wallet QA client |
+| `lib/` | Appium session and selectors, evidence capture, Wallet QA client, `known-issues.ts` (accepted deviations) |
 | `artifacts/` | Output of a run: screenshots, UI hierarchies, `evidence.json` per test, Appium log, logcat |
 
 ## The wallet patch
@@ -108,6 +108,10 @@ Tested on macOS (Apple Silicon). Linux works the same with an x86_64 system imag
    scripts/emulator-check.sh
    scripts/run-tests.sh
    ```
+
+A test passes when Wallet QA's verdict is `passed`, or when it is `failed` exactly as an entry in
+`lib/known-issues.ts` describes (currently `I-PID-SDJWT`: `card-shown`, see FINDINGS.md W8). A
+known issue that stops reproducing fails the test, so the entry gets removed.
 
 Results are in `automation/android/artifacts/`. Each test directory has the screenshots and UI
 hierarchies taken when it answered a checklist question, and `evidence.json` with the question,

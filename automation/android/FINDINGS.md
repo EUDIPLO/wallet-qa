@@ -15,6 +15,9 @@ EUDIPLO 9.1.0.
 
 So the automation works end to end, and its one failure is a real difference between the wallet
 and what Wallet QA asks, which a maintainer needs to decide (see [Decisions](#decisions-for-the-maintainer)).
+CI pins it as a known issue (`lib/known-issues.ts`): the test passes only while Wallet QA's verdict is
+`failed` with exactly `card-shown` failing, and fails if anything else fails or if `card-shown` starts
+passing.
 Every checklist answer is derived from the screen; the evidence (`artifacts/<test>/evidence.json`
 plus screenshot and UI hierarchy per answer) shows what was checked and found.
 
