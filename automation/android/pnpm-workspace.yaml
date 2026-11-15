@@ -1,0 +1,9 @@
+# Own workspace root, so this package installs independently of Wallet QA's root workspace
+# and can move to another repository unchanged.
+allowBuilds:
+  esbuild: true
+  # Not needed: the UiAutomator2 driver is a dependency of this package (Appium finds it through
+  # package.json), and the tests drive no desktop browser.
+  appium: false
+  edgedriver: false
+  geckodriver: false
