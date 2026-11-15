@@ -163,11 +163,10 @@ const reject = (
   configId: string,
   codes: string[],
   instruction: string,
-  backendProfile = 'default',
 ): StepDefinition => ({
   id: 'reject',
   kind: 'presentation',
-  backendProfile,
+  backendProfile: 'default',
   configId,
   expected: 'rejected',
   backendErrorCodes: codes,
@@ -445,7 +444,7 @@ const entries: Entry[] = [
     prerequisites: [],
     availability: 'unsupported',
     unavailableReason:
-      'EUDIPLO 8.1 defers issuance only through an issuance webhook; Wallet QA has to provide that webhook first.',
+      'Deferred issuance needs an issuance webhook in Wallet QA, which it does not provide yet.',
     steps: [issueLoyalty()],
   },
 
@@ -975,7 +974,7 @@ const entries: Entry[] = [
         : {
             availability: 'unsupported' as const,
             unavailableReason:
-              'EUDIPLO 8.1 checks expiry and revocation of its own access certificate and refuses to sign the request, so it cannot send one to the wallet.',
+              'EUDIPLO checks expiry and revocation of its own access certificate and refuses to sign the request, so it cannot send one to the wallet.',
           }),
       fallback: 'attest',
       steps: [
@@ -983,9 +982,6 @@ const entries: Entry[] = [
           configId,
           ['invalid_request', 'invalid_request_object', 'invalid_client', 'access_denied'],
           'Open the request. The wallet must refuse it before showing any consent screen.',
-          // Its own tenant: EUDIPLO signs issuer metadata with any access key chain of a
-          // tenant, so the untrusted chain must not live next to the issuer in `base`.
-          'access-untrusted',
         ),
       ],
       manual: [refusedWithReason, noDataOffered],

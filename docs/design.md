@@ -40,9 +40,9 @@ runs return to Wallet QA through the presentation's redirect URI.
 | Test | Why |
 | --- | --- |
 | I-WIA (wallet attestation required) | Needs a tenant that trusts the wallet provider's attestation keys. |
-| I-DEFERRED (deferred issuance) | EUDIPLO 8.1 defers issuance only through an issuance webhook, which Wallet QA does not provide yet. |
-| R-ACCESS-EXPIRED, R-ACCESS-REVOKED | EUDIPLO 8.1 validates its own access certificate before signing and refuses expired or revoked ones. |
-| R-REG-INVALID, R-REG-REVOKED, R-REG-OVERASK | Need registration certificate fixtures; EUDIPLO 8.1 also sends registration certificates only when the tenant has a registrar account. |
+| I-DEFERRED (deferred issuance) | Needs an issuance webhook in Wallet QA, which it does not provide yet. |
+| R-ACCESS-EXPIRED, R-ACCESS-REVOKED | EUDIPLO validates its own access certificate before signing and refuses expired or revoked ones. |
+| R-REG-INVALID, R-REG-REVOKED, R-REG-OVERASK | Need registration certificate fixtures; EUDIPLO also sends registration certificates only when the tenant has a registrar account. |
 
 ### Ideas for later
 
@@ -67,7 +67,7 @@ Tests that need a tenant-wide setting (wallet attestation, an untrusted issuer) 
 tenant. Each test step names its backend profile, which maps to a tenant in
 `config/eudiplo-backends.json`.
 
-Findings from the EUDIPLO 8.x configuration that shape the fixtures:
+Findings from the EUDIPLO configuration that shape the fixtures:
 
 - A presentation config picks its signing key chain with `accessKeyChainId`, so one verifier
   tenant holds the valid access certificate and the deliberately broken one. Every
@@ -87,7 +87,7 @@ Fixture rules:
 
 `scripts/generate-fixtures.mjs` creates the test trust material: a Wallet QA test root, every
 tenant's key chains for a given hostname, and the `access-untrusted` chain from a second root
-whose key is never published (in its own tenant, so it never signs `base`'s issuer metadata). A deployment replaces what it needs through an overlay
+whose key is never published. A deployment replaces what it needs through an overlay
 ([hosting.md](hosting.md#what-a-deployment-changes)).
 
 ## 3. Evaluation logic

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v2/TrustListConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "id": "wallet-qa-issuers",
+    "description": "Issuers of this Wallet QA instance (the base tenant), for trusted_authorities in its presentations",
+    "keyChainId": "570852d7-7e7f-40af-a0e3-a6ebffd75ed0",
+    "entities": [
+      {
+        "type": "internal",
+        "issuerKeyChainId": "dbb65456-c358-46c1-bb5b-c777ef72c1d3",
+        "revocationKeyChainId": "dbb65456-c358-46c1-bb5b-c777ef72c1d4",
+        "info": {
+          "name": "Wallet QA test issuer",
+          "locale": "en",
+          "contactUri": "info@example.com",
+          "website": "https://github.com/EUDIPLO/wallet-qa"
+        }
+      }
+    ]
+  }
+}

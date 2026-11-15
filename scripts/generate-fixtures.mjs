@@ -76,10 +76,8 @@ function keyChainDocument(template, id, usageType, description, pair, certPath, 
 
 // A broken access certificate, selected per presentation config. EUDIPLO refuses to sign with an
 // expired or revoked access certificate, so only the untrusted-root case can reach a wallet.
-// Each lives in its own tenant: EUDIPLO signs issuer metadata with any access key chain of a
-// tenant, so a broken one next to an issuer would sign that issuer's metadata.
 const faults = [
-  { id: 'access-untrusted', tenant: 'access-untrusted', description: 'Wallet QA access certificate from an untrusted root', issuer: untrusted },
+  { id: 'access-untrusted', description: 'Wallet QA access certificate from an untrusted root', issuer: untrusted },
 ];
 
 for (const tenant of tenants) {
@@ -91,7 +89,6 @@ for (const tenant of tenants) {
   let template;
   for (const name of ['access', 'attestation', 'status-list', 'trust-list']) {
     const filename = path.join(config, 'key-chains', `${name}.json`);
-    if (!existsSync(filename)) continue; // e.g. a tenant that only holds a broken access chain
     const document = JSON.parse(readFileSync(filename, 'utf8'));
     template ??= document;
     const { pair, certPath } = leaf(tenantCa, name, { issuer: trusted });
@@ -99,12 +96,12 @@ for (const tenant of tenants) {
     const next = keyChainDocument(document, document.spec.id, document.spec.usageType, `Wallet QA test ${name}`, pair, certPath, trusted.cert);
     writeFileSync(filename, JSON.stringify(next, null, 2) + '\n', { mode: 0o600 });
   }
-  for (const fault of faults.filter((f) => f.tenant === tenant)) {
-    const filename = path.join(config, 'key-chains', `${fault.id}.json`);
-    template ??= JSON.parse(readFileSync(filename, 'utf8'));
+  // Only tenants that verify presentations need the broken access certificates.
+  if (!existsSync(path.join(config, 'presentation'))) continue;
+  for (const fault of faults) {
     const { pair, certPath } = leaf(tenantCa, fault.id, fault);
     const next = keyChainDocument(template, fault.id, 'access', fault.description, pair, certPath, fault.issuer.cert);
-    writeFileSync(filename, JSON.stringify(next, null, 2) + '\n', { mode: 0o600 });
+    writeFileSync(path.join(config, 'key-chains', `${fault.id}.json`), JSON.stringify(next, null, 2) + '\n', { mode: 0o600 });
   }
 }
 

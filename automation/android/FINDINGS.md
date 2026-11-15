@@ -3,7 +3,7 @@
 Spike goal: run Wallet QA tests end to end with Appium driving the EU reference wallet
 (`eudi-app-android-wallet-ui`, dev flavor) in an Android emulator, with no human involved.
 State: November 2026, wallet commit `428628bc` (Wallet Core 0.32.0, OpenID4VCI library 0.16.0),
-EUDIPLO 9.1.0.
+EUDIPLO `main` as upstream Wallet QA uses it (checked on 2026-11-16).
 
 ## Result
 
@@ -64,7 +64,7 @@ switched off.
 The dev flavor calls `requireSignedMetadata()`. The OpenID4VCI library asks for
 `Accept: application/jwt`, but the app's Ktor client (ContentNegotiation) adds `application/json`
 to every request, so the request goes out as `Accept: application/jwt; application/json`.
-EUDIPLO 9.1 returns the signed JWT only when Accept is exactly `application/jwt`, so the wallet
+EUDIPLO (9.1 and `main`) returns the signed JWT only when Accept is exactly `application/jwt`, so the wallet
 gets JSON and fails with `MissingSignedMetadata` ("Issuance blocked: the provider could not be
 verified"). Both sides can improve: the wallet should not ask for JSON when it requires JWT,
 and EUDIPLO could prefer JWT when the client lists it.
@@ -110,15 +110,17 @@ signature is verified (`WalletQaTrust` logs it). Worth checking whether the QA P
 
 ## Wallet QA findings
 
-- **Metadata signed with the untrusted access certificate (fixed).** EUDIPLO (8.1 and 9.1) signs
-  a tenant's issuer metadata with whichever access key chain it finds first; in `base` that was
-  `access-untrusted`. Fixed by moving it to its own tenant `access-untrusted` (with a one-line
-  change in `src/testing/catalog.ts`, approved). **Existing instances:** config import is
-  upsert, so delete the `access-untrusted` key chain and `qa-reject-access-untrusted` from `base`
-  after deploying. EUDIPLO could let an issuance config name its metadata signing key.
-- **EUDIPLO 9.1.0.** Upgraded (approved): new image path `ghcr.io/eudiplo/eudiplo`, config files
-  rewritten with `eudiplo config upgrade` (schema URLs only). Texts that state EUDIPLO 8.1
-  behaviour (catalog skip reasons, README, docs) were not re-verified against 9.1.
+- **Metadata signed with the untrusted access certificate (fixed).** Without a default, EUDIPLO
+  signs a tenant's issuer metadata with an access key chain picked by rule; in `base` that was
+  `access-untrusted` (the chain R-ACCESS-UNTRUSTED needs), so wallets that require signed metadata
+  rejected every issuance. EUDIPLO `main` lets a tenant name its default access key chain, and
+  `eudiplo-config/base/key-chain-defaults.json` sets it to `access`. An earlier version of this
+  branch moved `access-untrusted` to its own tenant; that clashed with upstream's trust-list
+  references and is replaced by this one file.
+- **EUDIPLO version.** The branch follows upstream Wallet QA: EUDIPLO `main`
+  (`ghcr.io/eudiplo/eudiplo:main`), v2 config schemas, `trusted_authorities` on every DCQL query.
+  `main` moves, so a CI run can break on an EUDIPLO change; pin `EUDIPLO_VERSION` to a release
+  once one contains what Wallet QA needs.
 - **Run store lock blocks a restarted container.** `FileRunStore` keeps the owner's PID in
   `runs.json.lock` and checks whether it is alive. In a container the server is usually PID 1,
   so after an unclean stop (e.g. `docker compose up --force-recreate`) the new process sees "its

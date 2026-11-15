@@ -27,8 +27,8 @@ localhost:8443 {
 localhost:3443 {
     tls internal
     # Signed issuer metadata: wallets that accept application/jwt among other types (e.g. the EU
-    # reference wallet sends "application/jwt; application/json") get the signed JWT. EUDIPLO 9.1
-    # returns it only for Accept exactly application/jwt. The Traefik setup has no such rule.
+    # reference wallet sends "application/jwt; application/json") get the signed JWT. EUDIPLO
+    # (9.1, main) returns it only for Accept exactly application/jwt. The Traefik setup has no such rule.
     @signed_metadata {
         path /.well-known/openid-credential-issuer/*
         header Accept *application/jwt*

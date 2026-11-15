@@ -1,5 +1,5 @@
 {
-  "$schema": "https://eudiplo.dev/schemas/v3/PresentationConfigFile.schema.json",
+  "$schema": "https://eudiplo.dev/schemas/v2/PresentationConfigFile.schema.json",
   "metadata": {
     "generation": 1
   },
@@ -15,7 +15,17 @@
             "vct_values": [
               "urn:eudi:eaa:diploma:1"
             ]
-          }
+          },
+          "trusted_authorities": [
+            {
+              "type": "etsi_tl",
+              "values": [
+                {
+                  "trustListId": "wallet-qa-issuers"
+                }
+              ]
+            }
+          ]
         }
       ]
     },

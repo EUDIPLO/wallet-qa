@@ -103,7 +103,7 @@ test('signature fault requests use the selected tenant backend', async () => {
 test('backend profile loader resolves environment values without leaking secrets into bindings', async () => {
   const env = { EUDIPLO_BASE_URL: 'http://configured.test:3000' };
   const profiles = loadBackendProfiles('config/eudiplo-backends.json', env);
-  assert.equal(profiles.length, 3);
+  assert.equal(profiles.length, 2);
   assert.equal(profiles[0].baseUrl, env.EUDIPLO_BASE_URL);
   const registry = createBackendRegistry(profiles, options.publicOrigin, options.publicOrigin);
   const saved = registry.snapshot('default');
@@ -112,7 +112,7 @@ test('backend profile loader resolves environment values without leaking secrets
   assert.doesNotThrow(() => rotated.resolve(saved));
   const changed = createBackendRegistry(profiles.map(p => ({ ...p, tenantId: 'different' })), options.publicOrigin, options.publicOrigin);
   assert.throws(() => changed.resolve(saved), /no longer available/);
-  assert.equal(loadBackendProfiles('config/eudiplo-backends.json', {}).length, 3);
+  assert.equal(loadBackendProfiles('config/eudiplo-backends.json', {}).length, 2);
   const dir = await mkdtemp(path.join(tmpdir(), 'wallet-qa-profile-loader-'));
   try {
     const filename = path.join(dir, 'profiles.json');

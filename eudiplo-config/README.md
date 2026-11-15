@@ -12,11 +12,17 @@ Docker copies this root to `CONFIG_FOLDER`; folder names become tenant IDs.
 Wallet QA links profiles to these tenants in `config/eudiplo-backends.json`.
 
 Files follow EUDIPLO’s `assets/config/demo` reference: each uses the corresponding
-`https://eudiplo.dev/schemas/v<N>/<Resource>ConfigFile.schema.json` URL (issuance v3,
-presentation v3, the rest v1, as written by `eudiplo config upgrade` 9.1),
-`metadata.generation: 1`, and a `spec` containing the configuration. Key chains use
-`spec.keySource` with `type: "private-jwk"`. Use EUDIPLO 9.0 or later
-(`EUDIPLO_VERSION=9.1.0`); 8.x cannot import the v2/v3 files.
+`https://eudiplo.dev/schemas/v2/<Resource>ConfigFile.schema.json` URL (status lists still
+`v1`, EUDIPLO has no v2 for them), `metadata.generation: 1`, and a `spec` containing the
+configuration. Key chains use `spec.keySource` with `type: "private-jwk"`. The default
+EUDIPLO image is `ghcr.io/eudiplo/eudiplo:main` (`EUDIPLO_VERSION`); the client roles
+(`credentials:status` for the revoke and suspend controls) need the v2 client schema.
+
+EUDIPLO requires `trusted_authorities` on every DCQL credential query. `base/trust-lists/
+qa-issuers.json` is an ETSI trust list of this tenant's own issuer (attestation and status
+list key chains, signed with the trust-list key chain); presentations of credentials Wallet
+QA issues reference it by `trustListId`. Presentations of PIDs from the PID provider test
+environment reference that provider's trust list, and those that accept any PID list both.
 
 Test client secrets are included directly in each tenant's `clients/test.json` and
 mirrored in `config/eudiplo-backends.json`. Keep both files aligned when changing a client.
