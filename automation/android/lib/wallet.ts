@@ -75,7 +75,7 @@ export async function waitFor(driver: Browser, selector: string, timeout = 30_00
   return element;
 }
 
-export async function isShown(driver: Browser, selector: string) {
+export function isShown(driver: Browser, selector: string): Promise<boolean> {
   return driver.$(selector).isDisplayed().catch(() => false);
 }
 
@@ -110,14 +110,14 @@ export interface UiNode {
 }
 
 const unescape = (s: string) =>
-  s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  s.replaceAll('&quot;', '"').replaceAll('&#39;', "'").replaceAll('&lt;', '<').replaceAll('&gt;', '>').replaceAll('&amp;', '&');
 
 /** Every node of the current screen, in hierarchy order. */
 export async function nodes(driver: Browser): Promise<UiNode[]> {
   const xml = await driver.getPageSource();
   return [...xml.matchAll(/<[\w.$]+\s([^>]*?)\/?>/g)].map((m) => {
-    const attr = (name: string) => unescape(m[1].match(new RegExp(`\\b${name}="([^"]*)"`))?.[1] ?? '');
-    const b = attr('bounds').match(/\[(\d+),(\d+)\]\[(\d+),(\d+)\]/);
+    const attr = (name: string) => unescape(new RegExp(String.raw`\b${name}="([^"]*)"`).exec(m[1])?.[1] ?? '');
+    const b = /\[(\d+),(\d+)\]\[(\d+),(\d+)\]/.exec(attr('bounds'));
     return {
       text: attr('text').trim(),
       desc: attr('content-desc').trim(),

@@ -41,8 +41,8 @@ export async function assertVerdict(qa: WalletQaClient, scenarioId: string, runI
   const failing = (run.assertions as { id: string; status: string; blocking?: boolean }[])
     .filter((a) => a.status === 'failed' && a.blocking !== false)
     .map((a) => a.id)
-    .sort();
-  const expected = [...known.failing].sort();
+    .sort((a, b) => a.localeCompare(b));
+  const expected = [...known.failing].sort((a, b) => a.localeCompare(b));
   if (run.verdict !== 'failed' || failing.join() !== expected.join())
     throw new Error(`Wallet QA ${details}\nExpected only the known issue (${expected.join(', ')}): ${known.reason}`);
   console.log(`# ${scenarioId}: known issue reproduced (${expected.join(', ')}): ${known.reason}`);
