@@ -15,5 +15,8 @@ RUN npm install -g pnpm@11.20.0 && pnpm install --prod --frozen-lockfile --ignor
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/config ./config
 
+# Run as the image's unprivileged `node` user (uid 1000), which owns the run store in /app/data.
+RUN mkdir -p /app/data && chown node:node /app/data
+USER node
 EXPOSE 8787
 CMD ["node", "dist/server/server.js"]

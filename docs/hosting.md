@@ -212,6 +212,26 @@ To move to a new EUDIPLO version, change `EUDIPLO_VERSION` and run `pnpm smoke` 
 
 Back up the `qa-data` volume if run history matters; everything else can be rebuilt.
 
+### Unprivileged containers
+
+Wallet QA and its EUDIPLO image run as the unprivileged `node` user (uid 1000). Named Docker
+volumes created by these images already belong to it. Two cases need a hand:
+
+- **Volumes created by an older Wallet QA** (before the containers ran as `node`) belong to
+  root. Give them to uid 1000 once:
+
+  ```sh
+  for v in wallet-qa_qa-data wallet-qa_eudiplo-db wallet-qa_eudiplo-uploads; do
+    docker run --rm -v "$v:/v" alpine chown -R 1000:1000 /v
+  done
+  ```
+
+- **Bind mounts** (the overlay, or data directories you mount yourself) must be readable, and
+  data directories writable, by uid 1000. The generator writes the overlay with mode 600, so
+  either own it as uid 1000 (`chown -R 1000:1000 "$QA_FIXTURES_DIR"`) or, with rootless Podman,
+  map your user to uid 1000 in the container (`UserNS=keep-id:uid=1000,gid=1000` in a Quadlet,
+  `--userns keep-id:uid=1000,gid=1000` with `podman run`).
+
 ## Access and abuse
 
 - The Wallet QA page and API need the team login (basic auth). To change it, set a new hash
