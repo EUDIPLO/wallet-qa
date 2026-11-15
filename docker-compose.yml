@@ -42,7 +42,7 @@ services:
       context: .
       dockerfile: Dockerfile.eudiplo
       args:
-        EUDIPLO_BASE_IMAGE_TAG: ${EUDIPLO_VERSION:-8.1.0}
+        EUDIPLO_BASE_IMAGE_TAG: ${EUDIPLO_VERSION:-9.1.0}
         CONFIG_SOURCE: ${EUDIPLO_CONFIG_SOURCE:-eudiplo-config}
     restart: unless-stopped
     network_mode: 'service:caddy'
@@ -88,7 +88,7 @@ services:
       EUDIPLO_BASE_URL: http://caddy:3000
       EUDIPLO_PUBLIC_URL: ${EUDIPLO_PUBLIC_URL:-https://localhost:3443}
       QA_BACKENDS_FILE: /app/config/eudiplo-backends.json
-      EUDIPLO_VERSION: ${EUDIPLO_VERSION:-8.1.0}
+      EUDIPLO_VERSION: ${EUDIPLO_VERSION:-9.1.0}
       QA_DATA_FILE: /app/data/runs.json
       QA_RETENTION_HOURS: ${QA_RETENTION_HOURS:-168}
     volumes:

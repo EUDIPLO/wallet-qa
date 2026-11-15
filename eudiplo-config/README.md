@@ -12,10 +12,11 @@ Docker copies this root to `CONFIG_FOLDER`; folder names become tenant IDs.
 Wallet QA links profiles to these tenants in `config/eudiplo-backends.json`.
 
 Files follow EUDIPLO’s `assets/config/demo` reference: each uses the corresponding
-`https://eudiplo.dev/schemas/v1/<Resource>ConfigFile.schema.json` URL,
+`https://eudiplo.dev/schemas/v<N>/<Resource>ConfigFile.schema.json` URL (issuance v3,
+presentation v3, the rest v1, as written by `eudiplo config upgrade` 9.1),
 `metadata.generation: 1`, and a `spec` containing the configuration. Key chains use
-`spec.keySource` with `type: "private-jwk"`. Use an EUDIPLO image that supports these
-schema URLs (`EUDIPLO_VERSION=8.1.0` or later; 7.6.0 predates the format).
+`spec.keySource` with `type: "private-jwk"`. Use EUDIPLO 9.0 or later
+(`EUDIPLO_VERSION=9.1.0`); 8.x cannot import the v2/v3 files.
 
 Test client secrets are included directly in each tenant's `clients/test.json` and
 mirrored in `config/eudiplo-backends.json`. Keep both files aligned when changing a client.
