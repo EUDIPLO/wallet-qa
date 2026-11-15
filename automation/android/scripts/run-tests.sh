@@ -19,6 +19,8 @@ apk="${WALLET_APK:-$android_dir/build/wallet-dev-debug.apk}"
 app_id="${WALLET_APP_ID:-eu.europa.ec.euidi.dev}"
 mkdir -p "$ARTIFACTS_DIR"
 cd "$android_dir"
+# The tests read EUDIPLO's issuer metadata over https://localhost:3443.
+export NODE_EXTRA_CA_CERTS="${NODE_EXTRA_CA_CERTS:-$(cd "$android_dir/../.." && pwd)/deploy/tls/root.crt}"
 
 adb wait-for-device
 if [[ "${SKIP_INSTALL:-0}" != 1 ]]; then

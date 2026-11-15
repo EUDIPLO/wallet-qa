@@ -12,7 +12,7 @@ index f46f889..c12e34c 100644
      implementation(project(LibraryModule.BusinessLogic.path))
      implementation(project(LibraryModule.AuthenticationLogic.path))
 diff --git a/core-logic/src/dev/java/eu/europa/ec/corelogic/config/WalletCoreConfigImpl.kt b/core-logic/src/dev/java/eu/europa/ec/corelogic/config/WalletCoreConfigImpl.kt
-index 1b069ad..5b6fa72 100644
+index 1b069ad..48c8328 100644
 --- a/core-logic/src/dev/java/eu/europa/ec/corelogic/config/WalletCoreConfigImpl.kt
 +++ b/core-logic/src/dev/java/eu/europa/ec/corelogic/config/WalletCoreConfigImpl.kt
 @@ -56,6 +56,28 @@ internal class WalletCoreConfigImpl(
@@ -88,7 +88,7 @@ index 1b069ad..5b6fa72 100644
                          enforceIfPresent()
                      }
  
-@@ -224,8 +241,37 @@ internal class WalletCoreConfigImpl(
+@@ -224,8 +241,41 @@ internal class WalletCoreConfigImpl(
                      )
                      .build(),
                  order = 1
@@ -96,17 +96,21 @@ index 1b069ad..5b6fa72 100644
 +        ) + walletQaIssuers
 +
 +    // Wallet QA: the EUDIPLO tenants of the local stack (https://localhost:3443 through adb reverse).
-+    // The wallet only accepts credential offers from configured issuers.
++    // The wallet only accepts credential offers from configured issuers. These tenants do not
++    // require wallet attestation and advertise token_endpoint_auth_methods_supported ["none"].
 +    private val walletQaIssuers: List<VciConfig>
 +        get() = listOf("base", "issuer-dpop-v1").mapIndexed { index, tenant ->
 +            VciConfig(
 +                issuerUrl = "https://localhost:3443/issuers/$tenant",
 +                config = OpenId4VciManager.Config.Builder()
 +                    .withClientAuthenticationType(
-+                        OpenId4VciManager.ClientAuthenticationType.AttestationBased(
-+                            clientId = "eudiw-abca"
++                        OpenId4VciManager.ClientAuthenticationType.None(
++                            clientId = "wallet-qa-eudi-dev"
 +                        )
 +                    )
++                    // Wallet QA's issuers require no key attestation, so the ETSI profile (attestation-
++                    // backed proofs only) finds no common proof type; plain OpenID4VCI JWT proofs it is.
++                    .withIssuanceProofProfile(OpenId4VciManager.IssuanceProofProfile.Standard)
 +                    .withAuthFlowRedirectionURI(BuildConfig.ISSUE_AUTHORIZATION_DEEPLINK)
 +                    .withParUsage(OpenId4VciManager.Config.ParUsage.IF_SUPPORTED)
 +                    .withDPopConfig(DPopConfig.Default)
@@ -318,6 +322,37 @@ index 0000000..3b4a661
 +        VerifyJwtSignature.Outcome.NotVerified(e)
 +    }
 +}
+diff --git a/core-logic/src/main/java/eu/europa/ec/corelogic/controller/WalletCoreDocumentsController.kt b/core-logic/src/main/java/eu/europa/ec/corelogic/controller/WalletCoreDocumentsController.kt
+index cff6fe4..ea8d75a 100644
+--- a/core-logic/src/main/java/eu/europa/ec/corelogic/controller/WalletCoreDocumentsController.kt
++++ b/core-logic/src/main/java/eu/europa/ec/corelogic/controller/WalletCoreDocumentsController.kt
+@@ -798,6 +798,8 @@ class WalletCoreDocumentsControllerImpl(
+             manager.resolveDocumentOffer(offerUri) { result ->
+                 when (result) {
+                     is OfferResult.Failure -> {
++                        // Wallet QA: log why an offer failed; the UI shows only a generic message.
++                        android.util.Log.w("WalletQa", "Credential offer resolution failed", result.cause)
+                         val untrustedReason = result.cause.toUntrustedIssuerReasonOrNull()
+ 
+                         trySendBlocking(
+@@ -1199,6 +1201,8 @@ class WalletCoreDocumentsControllerImpl(
+         val listener = OpenId4VciManager.OnIssueEvent { event ->
+             when (event) {
+                 is IssueEvent.DocumentFailed -> {
++                    // Wallet QA: log why issuance failed; the UI shows only a generic message.
++                    android.util.Log.w("WalletQa", "Document issuance failed: ${event.docType}", event.cause)
+                     if (event.cause.toUntrustedIssuerReasonOrNull() != null) {
+                         untrustedDocuments[event.docType] = event.name
+                     } else {
+@@ -1279,6 +1283,8 @@ class WalletCoreDocumentsControllerImpl(
+                 }
+ 
+                 is IssueEvent.Failure -> {
++                    // Wallet QA: log why issuance failed; the UI shows only a generic message.
++                    android.util.Log.w("WalletQa", "Issuance failed", event.cause)
+                     val untrustedReason = event.cause.toUntrustedIssuerReasonOrNull()
+ 
+                     trySendBlocking(
 diff --git a/network-logic/src/main/res/xml/network_security_config.xml b/network-logic/src/main/res/xml/network_security_config.xml
 index b6bf2ee..6713a4e 100644
 --- a/network-logic/src/main/res/xml/network_security_config.xml
