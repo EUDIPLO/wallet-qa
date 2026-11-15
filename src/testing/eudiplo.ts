@@ -36,7 +36,7 @@ export function normalizeSession(value: unknown): SessionEvidence {
     )
   )
     throw new Error('Unsupported EUDIPLO session status');
-  // EUDIPLO 8.x serializes unset columns as null rather than omitting them.
+  // EUDIPLO (since 8.x) serializes unset columns as null rather than omitting them.
   const credentials = session.credentials ?? undefined;
   if (
     credentials !== undefined &&
@@ -52,7 +52,7 @@ export function normalizeSession(value: unknown): SessionEvidence {
     typeof session.errorReason === 'string'
       ? /^Wallet error: ([a-zA-Z0-9_]+)(?::|$)/.exec(session.errorReason)?.[1]
       : undefined;
-  // EUDIPLO 8.x keeps an issuance session at "fetched" after the credential was
+  // EUDIPLO (since 8.x) keeps an issuance session at "fetched" after the credential was
   // issued and only moves it to "completed" once the wallet posts a
   // credential_accepted notification. Wallets with DPoP-bound tokens currently
   // send that notification without a DPoP proof and EUDIPLO rejects it, so the
@@ -279,7 +279,7 @@ export class EudiploBackend implements Backend {
     if (response.status === 404) return null;
     if (!response.ok)
       throw new Error(`Reading key chain ${keyId} failed (HTTP ${response.status})`);
-    // EUDIPLO 8.1: { activeCertificate: { pem, subject, issuer, notAfter, ... } }
+    // EUDIPLO 8.1 and later: { activeCertificate: { pem, subject, issuer, notAfter, ... } }
     const data = (await response.json()) as { activeCertificate?: { pem?: unknown } | null };
     const pem = data.activeCertificate?.pem;
     return typeof pem === 'string' ? pem : null;

@@ -186,19 +186,16 @@ pnpm smoke                        # creates and deletes one EUDIPLO session per 
 - Hosting: a [single-instance setup](docs/hosting.md) with basic auth exists; missing is a
   PostgreSQL store for more than one instance.
 - Registration certificates: a deployment can add them to presentation configs
-  ([hosting](docs/hosting.md#what-a-deployment-changes)), but EUDIPLO 8.1 sends them only when the
+  ([hosting](docs/hosting.md#what-a-deployment-changes)), but EUDIPLO sends them only when the
   tenant has a registrar account. The `R-REG-*` fault tests still need fixtures.
-- Expired and revoked access certificates (`R-ACCESS-EXPIRED`, `R-ACCESS-REVOKED`): EUDIPLO 8.1
+- Expired and revoked access certificates (`R-ACCESS-EXPIRED`, `R-ACCESS-REVOKED`): EUDIPLO
   validates its own access certificate before signing and refuses both, so these need a
   switch in EUDIPLO or a request signed by Wallet QA itself.
 - Fixtures: registration certificates (`R-REG-*`), wallet attestation tenant (`I-WIA`),
   deferred issuance webhook (`I-DEFERRED`), DC API and transaction data tests.
 - Maestro flows on top of `WalletQaClient` and the page contract.
 
-## EUDIPLO 8.x notes
-
-- `POST /api/issuer/offer` logs `ERR_HTTP_HEADERS_SENT` / 500 from its trace-id interceptor
-  even though the offer was returned; the client gets a normal response.
+## EUDIPLO notes
 
 - An issuance session stays at `fetched` after the credential is issued; EUDIPLO only sets
   `completed` when the wallet posts a `credential_accepted` notification. The iOS wallet sends
@@ -208,8 +205,6 @@ pnpm smoke                        # creates and deletes one EUDIPLO session per 
   `credential_deleted` notification still fails the step.
 - The wallet refuses SD-JWT credentials without a `cnf` claim, so every issued credential
   fixture must use `keyBinding: true`.
-- EUDIPLO logs a spurious `ERR_HTTP_HEADERS_SENT` 500 after each successful offer request;
-  the offer is created regardless.
 - PID presentation fixtures run with `statusCheckMode: disabled`: the demo PID provider's status
   list JWT is expired and EUDIPLO would otherwise reject every PID presentation. These scenarios
   judge disclosure, not revocation.

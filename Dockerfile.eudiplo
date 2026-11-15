@@ -1,5 +1,5 @@
-ARG EUDIPLO_BASE_IMAGE_TAG=8.1.0
-FROM ghcr.io/openwallet-foundation/eudiplo:${EUDIPLO_BASE_IMAGE_TAG}
+ARG EUDIPLO_BASE_IMAGE_TAG=main
+FROM ghcr.io/eudiplo/eudiplo:${EUDIPLO_BASE_IMAGE_TAG}
 # CONFIG_SOURCE is the tenant root copied into the image; subdirectories become tenant IDs.
 ARG CONFIG_SOURCE=eudiplo-config
 COPY ${CONFIG_SOURCE}/ /app/config/config/
