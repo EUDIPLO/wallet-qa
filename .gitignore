@@ -172,3 +172,4 @@ data/
 fixtures/
 
 !.env.hosted.example
+!.env.traefik.example

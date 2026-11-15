@@ -162,11 +162,11 @@ test('normalization rejects unknown status and removes private backend fields', 
   assert.equal(rejection.walletErrorCode, 'invalid_request');
   assert.ok(!JSON.stringify(rejection).includes('sensitive details'));
   assert.deepEqual(normalizeSession({ status: 'completed', refresh_token: 'secret', responseEncryptionPrivateJwk: { d: 'private' } }), { status: 'completed', failureCode: undefined, walletErrorCode: undefined, credentials: undefined });
-  // EUDIPLO 8.x: an issued credential shows up as a notification entry while the status stays fetched.
+  // EUDIPLO (since 8.x): an issued credential shows up as a notification entry while the status stays fetched.
   assert.equal(normalizeSession({ status: 'fetched', notifications: [{ id: 'n1', credentialConfigurationId: 'loyalty-card' }] }).status, 'completed');
   assert.equal(normalizeSession({ status: 'fetched', notifications: [{ id: 'n1', event: 'credential_failure' }] }).status, 'failed');
   assert.equal(normalizeSession({ status: 'fetched', notifications: [] }).status, 'fetched');
-  // EUDIPLO 8.x returns null for unset columns.
+  // EUDIPLO (since 8.x) returns null for unset columns.
   assert.deepEqual(normalizeSession({ status: 'active', credentials: null, failureCode: null, errorReason: null, outcome: null }), { status: 'active', failureCode: undefined, walletErrorCode: undefined, credentials: undefined });
 });
 test('HTTP API is open, provides live results, bounded waits and immediate client assertions', async () => {

@@ -32,17 +32,25 @@ certificate comes from, and what the wallet has to trust. The same data is at
 
 ## Local and hosted
 
-It is the same Compose stack with `docker-compose.hosted.yml` on top:
+It is the same Compose stack with an override on top. There are two hosted variants that
+differ only in the TLS proxy:
+
+| Variant | Override | Env template | Use when |
+| --- | --- | --- | --- |
+| Bundled Caddy | `docker-compose.hosted.yml` | `.env.hosted.example` | The server has nothing on ports 80/443; Caddy gets the certificates. |
+| Existing Traefik | `docker-compose.traefik.yml` | `.env.traefik.example` | Traefik already terminates TLS on the server ([below](#with-an-existing-traefik)); Caddy is not started. |
+
+Both behave the same towards testers and wallets:
 
 | | Local (`docker-compose.yml`) | Hosted (`+ docker-compose.hosted.yml`) |
 | --- | --- | --- |
 | Hostnames | `localhost:8443`, `localhost:3443` | `QA_HOST`, `EUDIPLO_HOST` on port 443 |
-| TLS | Caddy internal CA, test root on every device | Let's Encrypt via Caddy, nothing to install |
+| TLS | Caddy internal CA, test root on every device | Let's Encrypt via Caddy or your Traefik, nothing to install |
 | EUDIPLO tenant config | committed `eudiplo-config/` | the same, from the image, plus the deployment's overlay (`QA_FIXTURES_DIR/overlay`) |
 | Key chains | committed, for `localhost` | in the overlay: generated for `EUDIPLO_HOST`, or the deployment's own |
 | `/trust` on Wallet QA | committed `public/trust/` | `QA_FIXTURES_DIR/public` |
 | Wallet QA page and API | open on `localhost` | basic auth (one team login); wallet-facing paths stay open |
-| EUDIPLO management API (`/api`) | on `localhost` | blocked at Caddy; only Wallet QA reaches it inside the stack |
+| EUDIPLO management API (`/api`) | on `localhost` | blocked at the proxy; only Wallet QA reaches it inside the stack |
 | EUDIPLO database | lost on `down` | `eudiplo-db` volume |
 
 ## Requirements
@@ -51,7 +59,8 @@ It is the same Compose stack with `docker-compose.hosted.yml` on top:
   are plenty.
 - Two DNS names pointing at it, for example `wallet-testing.eudiplo.dev` (Wallet QA) and
   `issuer.wallet-testing.eudiplo.dev` (EUDIPLO).
-- Ports 80 and 443 open to the internet (Let's Encrypt and the wallets).
+- Ports 80 and 443 open to the internet (Let's Encrypt and the wallets), served either by the
+  bundled Caddy or by your existing Traefik.
 
 ## 1. Generate the trust material
 
@@ -88,7 +97,7 @@ at the same path in the tenant config from git (`scripts/eudiplo-entrypoint.sh`,
 | Key chains for your hostname | `<tenant>/key-chains/*.json` | Always; the generator writes them. |
 | **Access certificate** the wallet trusts | `base/key-chains/access.json`: keep `spec.id` (`access`) and the key, put the chain your registrar or PKI issued for that key in `spec.crt` (leaf first). Create the CSR from the generated key (below), or replace `keySource` with your own key. | When wallets should trust your registrar instead of the Wallet QA test root. |
 | **Registration certificates** | `base/presentation/<config>.json`: a copy of the presentation config from git with `"registration_cert": { "jwt": "<registration certificate>" }` added. | For every presentation that should carry one. See the limitation below. |
-| Registrar account | `base/registrar.json` (EUDIPLO's `RegistrarConfig`: `registrarUrl`, `oidcUrl`, `clientId`, `username`, `password`) | Only needed for registration certificates in EUDIPLO 8.1 (below). |
+| Registrar account | `base/registrar.json` (EUDIPLO's `RegistrarConfig`: `registrarUrl`, `oidcUrl`, `clientId`, `username`, `password`) | Only needed for registration certificates (below). |
 | Issuer certificates | `<tenant>/key-chains/attestation.json`, `status-list.json`, `trust-list.json` | When wallets should trust the issuer through your own PKI instead of the test root. |
 
 A CSR for the generated access key, to send to your registrar:
@@ -104,7 +113,7 @@ must stay chained to the untrusted root, or R-ACCESS-UNTRUSTED passes for the wr
 A copied presentation config replaces the one from git completely, so compare it after a
 `git pull` that changed the original.
 
-**Limitation in EUDIPLO 8.1:** a presentation request only carries its `registration_cert`,
+**Limitation in EUDIPLO:** a presentation request only carries its `registration_cert`,
 even a pre-issued `jwt`, when the tenant has a registrar configuration, and importing
 `registrar.json` checks the account against the registrar. Without a reachable registrar
 account, registration certificates are silently left out. The pre-issued JWT itself is used
@@ -159,6 +168,35 @@ EUDIPLO_BASE_URL=http://localhost:3000 EUDIPLO_PUBLIC_URL=https://issuer.wallet-
 per test step. Finally open the page and check **This instance**: each tenant's access
 certificate should be issued by what your wallets trust.
 
+## With an existing Traefik
+
+If Traefik already terminates TLS on the server, use `docker-compose.traefik.yml` instead of
+`docker-compose.hosted.yml`. Caddy is not started; EUDIPLO and Wallet QA join Traefik's Docker
+network and carry labels that do what `deploy/Caddyfile.hosted` does:
+
+| Router | Rule | Middleware |
+| --- | --- | --- |
+| `wallet-qa-open` | `QA_HOST` and `/protocol/`, `/trust/`, `/health/`, `/r/` (priority 200) | none: wallets call these |
+| `wallet-qa` | `QA_HOST` (priority 100) | `wallet-qa-auth` (basic auth) |
+| `wallet-qa-eudiplo` | `EUDIPLO_HOST` and not `/api` | none; `/api` has no router, so Traefik answers 404 |
+
+Your Traefik needs the Docker provider (`exposedByDefault=false` is fine, the services set
+`traefik.enable=true`), an HTTPS entrypoint and a certificate resolver. Name them in
+`.env.traefik` (copy of `.env.traefik.example`): `TRAEFIK_NETWORK` (the external Docker network
+Traefik is attached to, default `traefik`), `TRAEFIK_ENTRYPOINT` (default `websecure`) and
+`TRAEFIK_CERTRESOLVER` (default `letsencrypt`). The rest of `.env.traefik` is as in step 2:
+hostnames, `QA_FIXTURES_DIR`, the two EUDIPLO secrets and the login. For the hash,
+`htpasswd -nbB qa '<password>' | cut -d: -f2` works as well as `caddy hash-password`; keep it
+in single quotes.
+
+```sh
+docker compose -p wallet-qa --env-file .env.traefik \
+  -f docker-compose.yml -f docker-compose.traefik.yml up --build -d --wait
+```
+
+Then run the checks of step 3; they are the same. If you route HTTP to HTTPS in Traefik, do it
+on the entrypoint; the routers here only listen on `TRAEFIK_ENTRYPOINT`.
+
 ## Updating
 
 ```sh
@@ -167,11 +205,32 @@ docker compose -p wallet-qa --env-file .env.hosted \
   -f docker-compose.yml -f docker-compose.hosted.yml up --build -d --wait
 ```
 
-Runs, workspaces (`qa-data`), EUDIPLO's database (`eudiplo-db`) and Caddy's certificates
-(`caddy-data`) are volumes and survive. EUDIPLO re-imports the tenant config on every start.
+(With Traefik: `.env.traefik` and `docker-compose.traefik.yml`.) Runs, workspaces (`qa-data`),
+EUDIPLO's database (`eudiplo-db`) and, with Caddy, its certificates (`caddy-data`) are volumes
+and survive. EUDIPLO re-imports the tenant config on every start.
 To move to a new EUDIPLO version, change `EUDIPLO_VERSION` and run `pnpm smoke` afterwards.
 
 Back up the `qa-data` volume if run history matters; everything else can be rebuilt.
+
+### Unprivileged containers
+
+Wallet QA and its EUDIPLO image run as the unprivileged `node` user (uid 1000). Named Docker
+volumes created by these images already belong to it. Two cases need a hand:
+
+- **Volumes created by an older Wallet QA** (before the containers ran as `node`) belong to
+  root. Give them to uid 1000 once:
+
+  ```sh
+  for v in wallet-qa_qa-data wallet-qa_eudiplo-db wallet-qa_eudiplo-uploads; do
+    docker run --rm -v "$v:/v" alpine chown -R 1000:1000 /v
+  done
+  ```
+
+- **Bind mounts** (the overlay, or data directories you mount yourself) must be readable, and
+  data directories writable, by uid 1000. The generator writes the overlay with mode 600, so
+  either own it as uid 1000 (`chown -R 1000:1000 "$QA_FIXTURES_DIR"`) or, with rootless Podman,
+  map your user to uid 1000 in the container (`UserNS=keep-id:uid=1000,gid=1000` in a Quadlet,
+  `--userns keep-id:uid=1000,gid=1000` with `podman run`).
 
 ## Access and abuse
 
@@ -185,7 +244,8 @@ Back up the `qa-data` volume if run history matters; everything else can be rebu
 - Credentials issued here are test credentials; they are worthless outside wallets that
   trust the instance.
 - The EUDIPLO client secrets in `eudiplo-config/*/clients` are public. That is safe only
-  because `/api` is blocked at Caddy; keep that block if you change the Caddyfile. Wallet QA's
+  because `/api` is blocked at the proxy; keep that block if you change the Caddyfile or the
+  Traefik labels. Wallet QA's
   clients have `presentation:manage` so they can read the key chains for **This instance**.
 
 ## Troubleshooting
@@ -194,7 +254,7 @@ Back up the `qa-data` volume if run history matters; everything else can be rebu
 | --- | --- |
 | Caddy has no certificate | DNS points at the server, ports 80/443 are open, `docker compose -p wallet-qa logs caddy`. |
 | Wallets reject presentation requests | **This instance** on the start page: is the access certificate issued by what the wallet trusts? Check `overlay/base/key-chains/access.json` and the `[config-overlay]` lines in `docker compose -p wallet-qa logs eudiplo`. |
-| Requests carry no registration certificate | EUDIPLO 8.1 needs the tenant's `registrar.json` for that (see *What a deployment changes*). |
+| Requests carry no registration certificate | EUDIPLO needs the tenant's `registrar.json` for that (see *What a deployment changes*). |
 | The browser keeps asking for the login | Wrong user or hash; the hash must be in single quotes in `.env.hosted`. |
 | `Certificate validation failed` in EUDIPLO logs | An access certificate expired: generated ones last 365 days (regenerate), your own as long as your registrar issued them. |
 | EUDIPLO does not start after a config change | `docker compose -p wallet-qa logs eudiplo`; the import aborts on unknown variables or invalid files. |

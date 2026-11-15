@@ -54,7 +54,7 @@ const engine = new Engine(store, workspaces, backend, {
   versions: {
     catalog: '',
     sdk: '7.6.0',
-    eudiplo: process.env.EUDIPLO_VERSION ?? '8.1.0',
+    eudiplo: process.env.EUDIPLO_VERSION ?? 'main',
   },
 });
 // The generated test root, to tell its access certificates apart from the registrar's.
