@@ -1,12 +1,17 @@
-ARG EUDIPLO_BASE_IMAGE_TAG=8.1.0
-FROM ghcr.io/openwallet-foundation/eudiplo:${EUDIPLO_BASE_IMAGE_TAG}
+ARG EUDIPLO_BASE_IMAGE_TAG=main
+FROM ghcr.io/eudiplo/eudiplo:${EUDIPLO_BASE_IMAGE_TAG}
 # CONFIG_SOURCE is the tenant root copied into the image; subdirectories become tenant IDs.
 ARG CONFIG_SOURCE=eudiplo-config
-COPY ${CONFIG_SOURCE}/ /app/config/config/
+COPY --chown=node:node ${CONFIG_SOURCE}/ /app/config/config/
 ENV CONFIG_FOLDER=/app/config/config
 ENV CONFIG_IMPORT_MODE=upsert
-# Applies a hosted instance's trust material (key chains, registrar.json) on top of the
-# config above; a no-op locally. See scripts/eudiplo-entrypoint.sh.
-COPY scripts/eudiplo-entrypoint.sh /app/wallet-qa-entrypoint.sh
+# Applies a deployment's overlay (key chains, own certificates) on top of the config above;
+# a no-op locally. See scripts/eudiplo-entrypoint.sh.
+COPY --chmod=0755 scripts/eudiplo-entrypoint.sh /app/wallet-qa-entrypoint.sh
+# Run as the image's unprivileged `node` user (uid 1000). It owns everything EUDIPLO writes:
+# the config folder (database when FOLDER is unset), /app/data (FOLDER in hosted setups) and
+# uploads. Bind-mounted directories must be writable, and overlay files readable, by uid 1000.
+RUN mkdir -p /app/data /app/uploads && chown node:node /app/config /app/data /app/uploads
+USER node
 ENTRYPOINT ["/app/wallet-qa-entrypoint.sh"]
 CMD ["node", "dist/main.js"]

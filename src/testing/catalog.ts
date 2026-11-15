@@ -444,7 +444,7 @@ const entries: Entry[] = [
     prerequisites: [],
     availability: 'unsupported',
     unavailableReason:
-      'EUDIPLO 8.1 defers issuance only through an issuance webhook; Wallet QA has to provide that webhook first.',
+      'Deferred issuance needs an issuance webhook in Wallet QA, which it does not provide yet.',
     steps: [issueLoyalty()],
   },
 
@@ -974,7 +974,7 @@ const entries: Entry[] = [
         : {
             availability: 'unsupported' as const,
             unavailableReason:
-              'EUDIPLO 8.1 checks expiry and revocation of its own access certificate and refuses to sign the request, so it cannot send one to the wallet.',
+              'EUDIPLO checks expiry and revocation of its own access certificate and refuses to sign the request, so it cannot send one to the wallet.',
           }),
       fallback: 'attest',
       steps: [

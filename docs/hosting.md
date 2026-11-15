@@ -97,7 +97,7 @@ at the same path in the tenant config from git (`scripts/eudiplo-entrypoint.sh`,
 | Key chains for your hostname | `<tenant>/key-chains/*.json` | Always; the generator writes them. |
 | **Access certificate** the wallet trusts | `base/key-chains/access.json`: keep `spec.id` (`access`) and the key, put the chain your registrar or PKI issued for that key in `spec.crt` (leaf first). Create the CSR from the generated key (below), or replace `keySource` with your own key. | When wallets should trust your registrar instead of the Wallet QA test root. |
 | **Registration certificates** | `base/presentation/<config>.json`: a copy of the presentation config from git with `"registration_cert": { "jwt": "<registration certificate>" }` added. | For every presentation that should carry one. See the limitation below. |
-| Registrar account | `base/registrar.json` (EUDIPLO's `RegistrarConfig`: `registrarUrl`, `oidcUrl`, `clientId`, `username`, `password`) | Only needed for registration certificates in EUDIPLO 8.1 (below). |
+| Registrar account | `base/registrar.json` (EUDIPLO's `RegistrarConfig`: `registrarUrl`, `oidcUrl`, `clientId`, `username`, `password`) | Only needed for registration certificates (below). |
 | Issuer certificates | `<tenant>/key-chains/attestation.json`, `status-list.json`, `trust-list.json` | When wallets should trust the issuer through your own PKI instead of the test root. |
 
 A CSR for the generated access key, to send to your registrar:
@@ -113,7 +113,7 @@ must stay chained to the untrusted root, or R-ACCESS-UNTRUSTED passes for the wr
 A copied presentation config replaces the one from git completely, so compare it after a
 `git pull` that changed the original.
 
-**Limitation in EUDIPLO 8.1:** a presentation request only carries its `registration_cert`,
+**Limitation in EUDIPLO:** a presentation request only carries its `registration_cert`,
 even a pre-issued `jwt`, when the tenant has a registrar configuration, and importing
 `registrar.json` checks the account against the registrar. Without a reachable registrar
 account, registration certificates are silently left out. The pre-issued JWT itself is used
@@ -212,6 +212,26 @@ To move to a new EUDIPLO version, change `EUDIPLO_VERSION` and run `pnpm smoke` 
 
 Back up the `qa-data` volume if run history matters; everything else can be rebuilt.
 
+### Unprivileged containers
+
+Wallet QA and its EUDIPLO image run as the unprivileged `node` user (uid 1000). Named Docker
+volumes created by these images already belong to it. Two cases need a hand:
+
+- **Volumes created by an older Wallet QA** (before the containers ran as `node`) belong to
+  root. Give them to uid 1000 once:
+
+  ```sh
+  for v in wallet-qa_qa-data wallet-qa_eudiplo-db wallet-qa_eudiplo-uploads; do
+    docker run --rm -v "$v:/v" alpine chown -R 1000:1000 /v
+  done
+  ```
+
+- **Bind mounts** (the overlay, or data directories you mount yourself) must be readable, and
+  data directories writable, by uid 1000. The generator writes the overlay with mode 600, so
+  either own it as uid 1000 (`chown -R 1000:1000 "$QA_FIXTURES_DIR"`) or, with rootless Podman,
+  map your user to uid 1000 in the container (`UserNS=keep-id:uid=1000,gid=1000` in a Quadlet,
+  `--userns keep-id:uid=1000,gid=1000` with `podman run`).
+
 ## Access and abuse
 
 - The Wallet QA page and API need the team login (basic auth). To change it, set a new hash
@@ -234,7 +254,7 @@ Back up the `qa-data` volume if run history matters; everything else can be rebu
 | --- | --- |
 | Caddy has no certificate | DNS points at the server, ports 80/443 are open, `docker compose -p wallet-qa logs caddy`. |
 | Wallets reject presentation requests | **This instance** on the start page: is the access certificate issued by what the wallet trusts? Check `overlay/base/key-chains/access.json` and the `[config-overlay]` lines in `docker compose -p wallet-qa logs eudiplo`. |
-| Requests carry no registration certificate | EUDIPLO 8.1 needs the tenant's `registrar.json` for that (see *What a deployment changes*). |
+| Requests carry no registration certificate | EUDIPLO needs the tenant's `registrar.json` for that (see *What a deployment changes*). |
 | The browser keeps asking for the login | Wrong user or hash; the hash must be in single quotes in `.env.hosted`. |
 | `Certificate validation failed` in EUDIPLO logs | An access certificate expired: generated ones last 365 days (regenerate), your own as long as your registrar issued them. |
 | EUDIPLO does not start after a config change | `docker compose -p wallet-qa logs eudiplo`; the import aborts on unknown variables or invalid files. |

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://eudiplo.dev/schemas/v1/PresentationConfigFile.schema.json",
+  "$schema": "https://eudiplo.dev/schemas/v2/PresentationConfigFile.schema.json",
   "metadata": {
     "generation": 1
   },
@@ -28,6 +28,16 @@
               ],
               "values": [
                 "FR"
+              ]
+            }
+          ],
+          "trusted_authorities": [
+            {
+              "type": "etsi_tl",
+              "values": [
+                {
+                  "trustListId": "wallet-qa-issuers"
+                }
               ]
             }
           ]

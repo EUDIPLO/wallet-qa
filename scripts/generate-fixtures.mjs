@@ -74,7 +74,7 @@ function keyChainDocument(template, id, usageType, description, pair, certPath, 
   };
 }
 
-// A broken access certificate, selected per presentation config. EUDIPLO 8.1 refuses to sign with an
+// A broken access certificate, selected per presentation config. EUDIPLO refuses to sign with an
 // expired or revoked access certificate, so only the untrusted-root case can reach a wallet.
 const faults = [
   { id: 'access-untrusted', description: 'Wallet QA access certificate from an untrusted root', issuer: untrusted },
