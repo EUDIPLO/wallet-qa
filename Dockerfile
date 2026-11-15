@@ -1,4 +1,4 @@
-FROM node:22.19.0-alpine AS build
+FROM node:26.13.1-alpine AS build
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
@@ -7,7 +7,7 @@ RUN npm install -g pnpm@11.20.0 && pnpm install --frozen-lockfile --ignore-scrip
 COPY . .
 RUN pnpm run build
 
-FROM node:22.19.0-alpine AS runtime
+FROM node:26.13.1-alpine AS runtime
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN npm install -g pnpm@11.20.0 && pnpm install --prod --frozen-lockfile --ignore-scripts
