@@ -108,7 +108,7 @@ node -e 'const fs=require("fs");const k=JSON.parse(fs.readFileSync(process.argv[
 openssl req -new -key access.key -subj '/CN=<verifier name>' -out access.csr && rm access.key
 ```
 
-Leave alone what the tests depend on being broken: `base/key-chains/access-untrusted.json`
+Leave alone what the tests depend on being broken: `access-untrusted/key-chains/access-untrusted.json`
 must stay chained to the untrusted root, or R-ACCESS-UNTRUSTED passes for the wrong reason.
 A copied presentation config replaces the one from git completely, so compare it after a
 `git pull` that changed the original.

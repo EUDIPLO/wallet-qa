@@ -87,7 +87,7 @@ Fixture rules:
 
 `scripts/generate-fixtures.mjs` creates the test trust material: a Wallet QA test root, every
 tenant's key chains for a given hostname, and the `access-untrusted` chain from a second root
-whose key is never published. A deployment replaces what it needs through an overlay
+whose key is never published (in its own tenant, so it never signs `base`'s issuer metadata). A deployment replaces what it needs through an overlay
 ([hosting.md](hosting.md#what-a-deployment-changes)).
 
 ## 3. Evaluation logic

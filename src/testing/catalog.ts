@@ -163,10 +163,11 @@ const reject = (
   configId: string,
   codes: string[],
   instruction: string,
+  backendProfile = 'default',
 ): StepDefinition => ({
   id: 'reject',
   kind: 'presentation',
-  backendProfile: 'default',
+  backendProfile,
   configId,
   expected: 'rejected',
   backendErrorCodes: codes,
@@ -982,6 +983,9 @@ const entries: Entry[] = [
           configId,
           ['invalid_request', 'invalid_request_object', 'invalid_client', 'access_denied'],
           'Open the request. The wallet must refuse it before showing any consent screen.',
+          // Its own tenant: EUDIPLO signs issuer metadata with any access key chain of a
+          // tenant, so the untrusted chain must not live next to the issuer in `base`.
+          'access-untrusted',
         ),
       ],
       manual: [refusedWithReason, noDataOffered],

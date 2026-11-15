@@ -1,0 +1,15 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/ClientConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "clientId": "wallet-qa-access-untrusted-client",
+    "secret": "wallet-qa-access-untrusted-test-secret",
+    "description": "Test client",
+    "roles": [
+      "presentation:request",
+      "presentation:manage"
+    ]
+  }
+}

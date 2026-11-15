@@ -161,10 +161,11 @@ The page has a stable contract so Maestro, XCUITest or Espresso can drive it: vi
 ## Test trust
 
 `pnpm fixtures:generate <eudiplo-host> fixtures eudiplo-config` creates a
-new **Wallet QA Test Root CA**, every tenant key chain, and for the verifier tenant the
-`access-untrusted` chain (from a second root whose key is never published) that
-`R-ACCESS-UNTRUSTED` uses. Every presentation config names its chain with
-`accessKeyChainId`: with more than one access chain, EUDIPLO otherwise picks any of them. Copy the output as described in
+new **Wallet QA Test Root CA**, every tenant key chain, and the `access-untrusted` chain
+(from a second root whose key is never published) that `R-ACCESS-UNTRUSTED` uses. That chain
+lives in its own tenant, `access-untrusted`: EUDIPLO signs issuer metadata with any access
+chain of a tenant, so next to the issuer in `base` it would sign `base`'s metadata with the
+untrusted root. Every presentation config names its chain with `accessKeyChainId`. Copy the output as described in
 [eudiplo-config/README.md](eudiplo-config/README.md).
 
 Wallet dev builds must trust `public/trust/wallet-qa-test-root.der` for presentation

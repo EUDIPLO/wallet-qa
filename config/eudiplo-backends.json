@@ -22,5 +22,17 @@
     "publicUrl": "${EUDIPLO_PUBLIC_URL:https://localhost:3443}",
     "clientId": "wallet-qa-dpop-client",
     "clientSecret": "wallet-qa-dpop-test-secret"
+  },
+  {
+    "id": "access-untrusted",
+    "description": "Verifier whose access certificate chains to an untrusted root (R-ACCESS-UNTRUSTED).",
+    "instanceId": "shared-eudiplo",
+    "tenantId": "access-untrusted",
+    "configVersion": "localhost-access-untrusted-v1",
+    "eudiploVersion": "${EUDIPLO_VERSION:9.1.0}",
+    "baseUrl": "${EUDIPLO_BASE_URL:http://localhost:3000}",
+    "publicUrl": "${EUDIPLO_PUBLIC_URL:https://localhost:3443}",
+    "clientId": "wallet-qa-access-untrusted-client",
+    "clientSecret": "wallet-qa-access-untrusted-test-secret"
   }
 ]
