@@ -163,7 +163,9 @@ The page has a stable contract so Maestro, XCUITest or Espresso can drive it: vi
 `pnpm fixtures:generate <eudiplo-host> fixtures eudiplo-config` creates a
 new **Wallet QA Test Root CA**, every tenant key chain, and for the verifier tenant the
 `access-untrusted` chain (from a second root whose key is never published) that
-`R-ACCESS-UNTRUSTED` uses. Every presentation config names its chain with
+`R-ACCESS-UNTRUSTED` uses. Every certificate subject carries a country and organisation
+(`C=DE, O=Wallet QA`; set `FIXTURE_COUNTRY` for another country), as ISO/IEC 18013-5 requires
+for mdoc issuers. Every presentation config names its chain with
 `accessKeyChainId`: with more than one access chain, EUDIPLO otherwise picks any of them. Copy the output as described in
 [eudiplo-config/README.md](eudiplo-config/README.md).
 
