@@ -1,0 +1,24 @@
+# Share the requested data (OpenID4VP). Example selectors: adjust them to your wallet.
+appId: ${WALLET_APP_ID}
+---
+- tapOn:
+    text: Open
+    optional: true
+- extendedWaitUntil:
+    visible: (Share|Send data|Confirm)
+    timeout: 30000
+# verifier-shown: the consent screen names the Wallet QA verifier.
+- runFlow:
+    when:
+      visible: .*Wallet QA.*
+    commands:
+      - evalScript: ${output.qa.answers['verifier-shown'] = 'yes'}
+- tapOn: (Share|Send data|Confirm)
+- runFlow:
+    when:
+      true: ${typeof WALLET_PIN !== 'undefined'}
+    commands:
+      - extendedWaitUntil:
+          visible: .*PIN.*
+          timeout: 15000
+      - inputText: ${WALLET_PIN}
