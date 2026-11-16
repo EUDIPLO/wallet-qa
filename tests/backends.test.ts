@@ -45,6 +45,7 @@ test('runs use separate tenant clients even when upstream session IDs collide', 
   assert.equal((await store.get(b.run.id))!.verdict, 'passed');
   assert.equal((await store.get(a.run.id))!.verdict, null);
   assert.equal(liveRun((await store.get(b.run.id))!).currentStep.backend!.tenantId, 'dpop-v1-tenant');
+  assert.equal(liveRun((await store.get(b.run.id))!).currentStep.expected, 'completed');
   assert.equal(auditReport((await store.get(b.run.id))!).run.steps[0].backend!.configVersion, 'v1');
   await engine.delete(b.run.id);
   assert.deepEqual(second.deletes, ['same-session-id']); assert.deepEqual(first.deletes, []);

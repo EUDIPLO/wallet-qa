@@ -173,3 +173,4 @@ fixtures/
 
 !.env.hosted.example
 !.env.traefik.example
+maestro/wallet-qa-report.xml

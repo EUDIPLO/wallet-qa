@@ -489,6 +489,8 @@ export function liveRun(run: Run) {
   const steps = run.steps.map((step) => ({
     id: step.definition.id,
     kind: step.definition.kind,
+    /** What the wallet should do: complete it, or refuse (rejected, verifier_rejects). */
+    expected: step.definition.expected,
     state: step.state,
     instruction: step.definition.instruction ?? null,
     backend: step.backend ?? null,

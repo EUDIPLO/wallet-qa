@@ -158,6 +158,9 @@ The page has a stable contract so Maestro, XCUITest or Espresso can drive it: vi
 `data-completed`, `data-passed`, `data-verdict`, `data-attested`, `data-sync`. Open
 `/w/<workspace>?scenario=<id>` to preselect a test, `?run=<id>` to show a run.
 
+The [Maestro flows](maestro/README.md) use the API instead of the page: they start a run,
+open its same-device link in the wallet, and wait for the verdict.
+
 ## Test trust
 
 `pnpm fixtures:generate <eudiplo-host> fixtures eudiplo-config` creates a
