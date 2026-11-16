@@ -1,0 +1,31 @@
+# Opens the link in Paradym and unlocks it.
+# Android asks which app opens the link when several wallets handle openid-credential-offer://
+# or openid4vp://. Pick Paradym for this link only ("Nur diesmal"), never as the default.
+appId: ${WALLET_APP_ID}
+---
+- extendedWaitUntil:
+    visible: '(Mit Paradym Wallet öffnen|Paradym Wallet|Gib deine App-PIN ein|Ja, fortfahren|Karte angeboten|Anfrage überprüfen|Bitte warten|Etwas ist schiefgegangen)'
+    timeout: 15000
+    optional: true
+- runFlow:
+    when:
+      visible: 'Mit Paradym Wallet öffnen'
+    commands:
+      - tapOn: 'Nur diesmal'
+- runFlow:
+    when:
+      visible: 'Andere App verwenden'
+    commands:
+      # Another wallet is suggested first; Paradym is in the list below.
+      - scrollUntilVisible:
+          element: 'Paradym Wallet'
+      - tapOn: 'Paradym Wallet'
+      - runFlow:
+          when:
+            visible: 'Nur diesmal'
+          commands:
+            - tapOn: 'Nur diesmal'
+- runFlow:
+    when:
+      visible: 'Gib deine App-PIN ein'
+    file: enter-pin.yaml

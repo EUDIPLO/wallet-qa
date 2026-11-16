@@ -1,0 +1,49 @@
+# Paradym (id.paradym.wallet), read from 1.23.0 on Android with the device language German.
+# Share the requested data (OpenID4VP):
+#
+#   Organisation nicht verifiziert ──Ja, fortfahren──► Anfrage überprüfen ──Teilen──►
+#   Sende Daten mit deinem PIN-Code ──PIN──► redirect to the Wallet QA page in the browser
+#
+# verifier-shown: Paradym names no verifier it does not trust. For the Wallet QA access
+# certificate it shows "Organisation nicht verifiziert" / "Eine unbekannte Organisation", so
+# the flow answers "no". How Paradym shows a trusted verifier has not been seen yet, so that
+# case is left to a tester.
+appId: ${WALLET_APP_ID}
+---
+- runFlow: open-in-wallet.yaml
+- extendedWaitUntil:
+    visible: '(Ja, fortfahren|Anfrage überprüfen|Etwas ist schiefgegangen)'
+    timeout: 30000
+- runFlow:
+    when:
+      visible: 'Organisation nicht verifiziert'
+    commands:
+      - takeScreenshot: paradym-verifier-unverified
+      - evalScript: ${output.qa.answers['verifier-shown'] = 'no'}
+- runFlow:
+    when:
+      visible: 'Ja, fortfahren'
+    commands:
+      - tapOn: 'Ja, fortfahren'
+      - extendedWaitUntil:
+          visible: '(Anfrage überprüfen|Etwas ist schiefgegangen)'
+          timeout: 30000
+- runFlow:
+    when:
+      visible: 'Anfrage überprüfen'
+    commands:
+      - takeScreenshot: paradym-request
+      - tapOn: 'Teilen'
+      - extendedWaitUntil:
+          visible: '(Sende Daten mit deinem PIN-Code|Etwas ist schiefgegangen)'
+          timeout: 30000
+- runFlow:
+    when:
+      visible: 'Sende Daten mit deinem PIN-Code'
+    file: enter-pin.yaml
+- runFlow:
+    when:
+      visible: 'Etwas ist schiefgegangen'
+    commands:
+      - takeScreenshot: paradym-presentation-error
+      - tapOn: 'Zur Wallet'

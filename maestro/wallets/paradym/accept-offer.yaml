@@ -1,0 +1,61 @@
+# Paradym (id.paradym.wallet), read from 1.23.0 on Android with the device language German.
+# Accept a credential offer: trust the issuer, look at the offer, save the card.
+#
+#   Vertraust du <issuer>?  ──Ja, fortfahren──► Bitte warten ──► Karte angeboten ──Weiter──►
+#   Möchtest du diese Karte speichern? ──Akzeptieren──► Erfolgreich!
+#
+# When Paradym rejects the issued credential it shows "Etwas ist schiefgegangen" with the
+# reason; the flow then answers the checklist with "no" and leaves through "Zur Wallet".
+# Paradym asked for no PIN on accept.
+appId: ${WALLET_APP_ID}
+---
+- runFlow: open-in-wallet.yaml
+- extendedWaitUntil:
+    visible: '(Ja, fortfahren|Karte angeboten|Etwas ist schiefgegangen)'
+    timeout: 30000
+- runFlow:
+    when:
+      visible: 'Ja, fortfahren'
+    commands:
+      - takeScreenshot: paradym-issuer-trust
+      - tapOn: 'Ja, fortfahren'
+      # Paradym fetches the credentials here, before it shows the card.
+      - extendedWaitUntil:
+          visible: '(Karte angeboten|Etwas ist schiefgegangen)'
+          timeout: 60000
+- runFlow:
+    when:
+      visible: 'Karte angeboten'
+    commands:
+      - takeScreenshot: paradym-offer
+      - tapOn: 'Weiter'
+      - extendedWaitUntil:
+          visible: 'Möchtest du diese Karte speichern\?'
+          timeout: 30000
+      # claims-shown: the card's claims are listed under their display names on this screen.
+      - takeScreenshot: paradym-claims
+      - evalScript: ${output.qa.answers['claims-shown'] = 'yes'}
+      - tapOn: 'Akzeptieren'
+      - extendedWaitUntil:
+          visible: '(Erfolgreich!|Etwas ist schiefgegangen)'
+          timeout: 30000
+# card-shown: the success screen shows the stored card ("Credential") with its name.
+- runFlow:
+    when:
+      visible: 'Erfolgreich!'
+    commands:
+      - takeScreenshot: paradym-card-stored
+      - runFlow:
+          when:
+            visible: 'Credential'
+          commands:
+            - evalScript: ${output.qa.answers['card-shown'] = 'yes'}
+      - tapOn: 'Zur Wallet'
+- runFlow:
+    when:
+      visible: 'Etwas ist schiefgegangen'
+    commands:
+      - takeScreenshot: paradym-issuance-error
+      - evalScript: ${output.qa.answers['card-shown'] = 'no'}
+      - evalScript: ${output.qa.answers['claims-shown'] = 'no'}
+      - tapOn: 'Zur Wallet'
