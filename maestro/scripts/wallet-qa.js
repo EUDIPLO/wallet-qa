@@ -61,7 +61,9 @@ function waitingStep(run) {
   return {
     id: step.id,
     kind: step.kind,
-    expected: step.expected,
+    // A server from before `expected` existed does not say; assume the wallet should complete
+    // the step. Refusal tests need a server that sends `expected`.
+    expected: step.expected ?? 'completed',
     uri: step.interaction.uri,
     transactionCode: step.interaction.transactionCode,
   };
