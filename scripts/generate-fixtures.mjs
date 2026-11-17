@@ -3,6 +3,7 @@
 // broken access certificate R-ACCESS-UNTRUSTED selects with accessKeyChainId.
 //
 //   pnpm fixtures:generate <eudiplo-host> [output] [config-root]
+//   FIXTURE_COUNTRY=DE (default) sets the country (C) in every certificate subject.
 //
 // Output: config/ (the whole tenant config with the new key chains, to update eudiplo-config/),
 // overlay/ (only the key chains, the start of a deployment's overlay, see docs/hosting.md),
@@ -32,13 +33,19 @@ cpSync(source, configRoot, { recursive: true });
 
 const openssl = (...args) => execFileSync('openssl', args, { stdio: ['ignore', 'ignore', 'pipe'] });
 const san = `${isIP(host) ? 'IP' : 'DNS'}:${host}`;
+// ISO/IEC 18013-5 (Annex B) requires countryName in the IACA and document signer subjects, and
+// mdoc wallets such as Paradym reject a document signer without it. Every certificate gets the
+// same country and organisation, so issuer, status list and root agree.
+const country = process.env.FIXTURE_COUNTRY ?? 'DE';
+if (!/^[A-Z]{2}$/.test(country)) throw new Error('FIXTURE_COUNTRY must be an ISO 3166-1 alpha-2 code, e.g. DE');
+const subject = (commonName) => `/C=${country}/O=Wallet QA/CN=${commonName}`;
 
-function selfSignedRoot(name, subject) {
+function selfSignedRoot(name, commonName) {
   const pair = generateKeyPairSync('ec', { namedCurve: 'P-256' });
   const key = path.join(ca, `${name}.key`);
   const cert = path.join(ca, `${name}.pem`);
   writeFileSync(key, pair.privateKey.export({ type: 'pkcs8', format: 'pem' }), { mode: 0o600 });
-  openssl('req', '-new', '-x509', '-sha256', '-key', key, '-subj', `/CN=${subject}`, '-days', '3650', '-out', cert,
+  openssl('req', '-new', '-x509', '-sha256', '-key', key, '-subj', subject(commonName), '-days', '3650', '-out', cert,
     '-addext', 'basicConstraints=critical,CA:TRUE', '-addext', 'keyUsage=critical,keyCertSign,cRLSign');
   return { key, cert };
 }
@@ -55,7 +62,7 @@ function leaf(dir, name, { issuer }) {
   const certPath = path.join(dir, `${name}.pem`);
   const ext = path.join(dir, `${name}.ext`);
   writeFileSync(keyPath, pair.privateKey.export({ type: 'pkcs8', format: 'pem' }), { mode: 0o600 });
-  openssl('req', '-new', '-sha256', '-key', keyPath, '-subj', `/CN=${host}`, '-out', csrPath);
+  openssl('req', '-new', '-sha256', '-key', keyPath, '-subj', subject(host), '-out', csrPath);
   writeFileSync(ext, `basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature\nsubjectAltName=${san}\n`);
   openssl('x509', '-req', '-sha256', '-in', csrPath, '-CA', issuer.cert, '-CAkey', issuer.key, '-CAcreateserial', '-days', '365', '-extfile', ext, '-out', certPath);
   return { pair, certPath };
