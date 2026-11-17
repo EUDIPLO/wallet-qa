@@ -14,8 +14,8 @@ run.sh ──► POST /v1/workspaces            one workspace per list of tests
        └─ wallet-qa.js finish  send checklist answers, wait for the verdict, fail unless passed
 ```
 
-Same-device links replace QR scanning, so the flows run on emulators and simulators without
-a camera.
+Same-device links replace QR scanning, so the flows need no camera. They run on emulators,
+simulators and USB-connected Android phones.
 
 ## Layout
 
@@ -28,8 +28,9 @@ a camera.
 | `wallets/<wallet>/refuse.yaml` | A request the wallet must refuse: note what the wallet shows. |
 | `run.sh` | Runs a list of tests in one workspace and saves the JUnit report. |
 
-`wallets/example` has example selectors (`Add`, `Share`, `Send data`, …). For a real wallet,
-copy the folder and change the three adapter flows. `test.yaml` stays as it is.
+`wallets/paradym` is the first adapter for a real wallet (see its README for the results).
+`wallets/example` has example selectors (`Add`, `Share`, `Send data`, …) and is the template:
+copy it and change the three adapter flows. `test.yaml` stays as it is.
 
 The adapters answer checklist questions through `output.qa.answers`, for example
 `evalScript: ${output.qa.answers['verifier-shown'] = 'yes'}` once the consent screen names
@@ -41,7 +42,8 @@ named.
 ## Run
 
 Needs the [Maestro CLI](https://docs.maestro.dev/getting-started/installing-maestro), a
-booted emulator or simulator with the wallet installed (and onboarded, if it needs a PID),
+booted emulator or simulator, or an Android phone connected with USB debugging, with the
+wallet installed (and onboarded, if it needs a PID),
 and a Wallet QA instance the device can reach.
 
 ```bash
@@ -70,6 +72,9 @@ keeps the order you give.
 | `WORKSPACE` | new one | Workspace for the run (`run.sh` sets it). |
 | `QA_STEP_TIMEOUT` | `120` | Seconds to wait for EUDIPLO to see the wallet finish a step. |
 
+Screenshots the adapters take (`takeScreenshot`) are written to the directory Maestro is
+started from, as `<name>.png`. Each test overwrites the previous test's files.
+
 ### Reaching the stack from a device
 
 - **Hosted instance**: nothing to do; the links point to public HTTPS hosts.
@@ -81,10 +86,16 @@ keeps the order you give.
 
 ## Limits of this proof of concept
 
-- Only the example adapter exists; its selectors match no particular wallet.
+- One real adapter: Paradym on Android, issuance and sharing. Its refusal flow is not
+  mapped and its automatic PIN entry (`WALLET_PIN`) is untested; a person entered the PIN.
+- `claims-shown` is answered when the wallet reaches its claims screen; the flows do not
+  compare the shown claims with the credential.
 - Wallet onboarding (PID, PIN setup) is not part of the flows; prepare the wallet once.
 - Steps with run controls (`P-REVOKED`, `P-SUSPENDED`) need a control call between steps.
 - Biometric prompts and system dialogs beyond the iOS "Open in …" prompt are not handled.
-- Real devices and device farms: Maestro runs flows on emulators and simulators. For real
-  devices, use a cloud that runs Maestro flows or Appium (see `docs/design.md`).
+- Real devices: Android phones over USB work (the Paradym results come from one). iPhones
+  and device farms are not covered; for those, use a cloud that runs Maestro flows or Appium
+  (see `docs/design.md`).
+- So far the flows ran through Maestro's MCP server; `run.sh` with the Maestro CLI has not
+  been tried end to end.
 - Maestro must run its JavaScript with GraalJS (the default in current versions).

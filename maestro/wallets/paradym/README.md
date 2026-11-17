@@ -28,7 +28,7 @@ maestro/run.sh paradym I-EAA-NOTX P-EAA-ONE
 | --- | --- | --- |
 | I-EAA-NOTX | passed | Card stored with image and claims, no PIN asked. Run fully by Maestro. |
 | I-PID-SDJWT | failed | Paradym rejects the credential: *"The status list signer chain does not match the credential issuer chain, and no dedicated trusted status certificates were configured for the trusted issuer."* The QA issuer signs status lists with its own `statusList` key chain (listed as revocation service in `trust-lists/qa-issuers.json`). |
-| I-PID-MDOC | failed | *"Country name (C) must be present in the issuer certificate's subject distinguished name"* (ISO 18013-5). `scripts/generate-fixtures.mjs` sets only `/CN=<host>`. |
+| I-PID-MDOC | failed | *"Country name (C) must be present in the issuer certificate's subject distinguished name"* (ISO 18013-5). `scripts/generate-fixtures.mjs` set only `/CN=<host>`; #8 adds `C` and `O`, not yet redeployed. |
 | P-EAA-ONE | failed | Presentation completed and the protocol check passed, but Paradym shows "Organisation nicht verifiziert" with no verifier name, so `verifier-shown` is "no". |
 
 Observations:
