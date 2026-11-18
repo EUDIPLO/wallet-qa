@@ -1,48 +1,56 @@
-# Paradym (id.paradym.wallet), read from 1.23.0 on Android with the device language German.
+# Paradym (id.paradym.wallet), read from 1.23.0 on Android in German and English.
 # Accept a credential offer: trust the issuer, look at the offer, save the card.
 #
-#   Vertraust du <issuer>?  ──Ja, fortfahren──► Bitte warten ──► Karte angeboten ──Weiter──►
-#   Möchtest du diese Karte speichern? ──Akzeptieren──► Erfolgreich!
+#   trust issuer ──trustYes──► (fetching) ──► offered ──next──► storeCard ──accept──► success
 #
-# When Paradym rejects the issued credential it shows "Etwas ist schiefgegangen" with the
-# reason; the flow then answers the checklist with "no" and leaves through "Zur Wallet".
+# The texts are in strings.js (German: "Ja, fortfahren", "Karte angeboten", ...).
+# When Paradym rejects the issued credential it shows its error screen with the reason; the
+# flow then answers the checklist with "no" and leaves through toWallet.
 # Paradym asked for no PIN on accept.
 appId: ${WALLET_APP_ID}
 ---
 - runFlow: open-in-wallet.yaml
 - extendedWaitUntil:
-    visible: '(Ja, fortfahren|Karte angeboten|Etwas ist schiefgegangen)'
+    visible: '(${output.t.trustYes}|${output.t.offered}|${output.t.error})'
     timeout: 30000
+    optional: true
 - runFlow:
     when:
-      visible: 'Ja, fortfahren'
+      notVisible: '(${output.t.trustYes}|${output.t.offered}|${output.t.error})'
+    commands:
+      - takeScreenshot: paradym-unknown-screen
+      - evalScript: "${(function () { throw new Error('Paradym shows no offer screen this adapter knows (texts for ' + output.languages + ' in strings.js). Is Paradym in another language? See paradym-unknown-screen.png') })()}"
+- runFlow:
+    when:
+      visible: ${output.t.trustYes}
     commands:
       - takeScreenshot: paradym-issuer-trust
-      - tapOn: 'Ja, fortfahren'
+      - tapOn: ${output.t.trustYes}
       # Paradym fetches the credentials here, before it shows the card.
       - extendedWaitUntil:
-          visible: '(Karte angeboten|Etwas ist schiefgegangen)'
+          visible: '(${output.t.offered}|${output.t.error})'
           timeout: 60000
 - runFlow:
     when:
-      visible: 'Karte angeboten'
+      visible: ${output.t.offered}
     commands:
       - takeScreenshot: paradym-offer
-      - tapOn: 'Weiter'
+      - tapOn: ${output.t.next}
       - extendedWaitUntil:
-          visible: 'Möchtest du diese Karte speichern\?'
+          visible: ${output.t.storeCard}
           timeout: 30000
       # claims-shown: the card's claims are listed under their display names on this screen.
       - takeScreenshot: paradym-claims
       - evalScript: ${output.qa.answers['claims-shown'] = 'yes'}
-      - tapOn: 'Akzeptieren'
+      - tapOn: ${output.t.accept}
       - extendedWaitUntil:
-          visible: '(Erfolgreich!|Etwas ist schiefgegangen)'
+          visible: '(${output.t.success}|${output.t.error})'
           timeout: 30000
-# card-shown: the success screen shows the stored card ("Credential") with its name.
+# card-shown: the success screen shows the stored card with its name. "Credential" is the
+# card's accessibility label, which Paradym does not translate.
 - runFlow:
     when:
-      visible: 'Erfolgreich!'
+      visible: ${output.t.success}
     commands:
       - takeScreenshot: paradym-card-stored
       - runFlow:
@@ -50,12 +58,12 @@ appId: ${WALLET_APP_ID}
             visible: 'Credential'
           commands:
             - evalScript: ${output.qa.answers['card-shown'] = 'yes'}
-      - tapOn: 'Zur Wallet'
+      - tapOn: ${output.t.toWallet}
 - runFlow:
     when:
-      visible: 'Etwas ist schiefgegangen'
+      visible: ${output.t.error}
     commands:
       - takeScreenshot: paradym-issuance-error
       - evalScript: ${output.qa.answers['card-shown'] = 'no'}
       - evalScript: ${output.qa.answers['claims-shown'] = 'no'}
-      - tapOn: 'Zur Wallet'
+      - tapOn: ${output.t.toWallet}

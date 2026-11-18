@@ -71,9 +71,11 @@ keeps the order you give.
 | `QA_USER`, `QA_PASSWORD` | unset | The team login of a hosted instance. |
 | `WORKSPACE` | new one | Workspace for the run (`run.sh` sets it). |
 | `QA_STEP_TIMEOUT` | `120` | Seconds to wait for EUDIPLO to see the wallet finish a step. |
+| `WALLET_LANG` | all | Adapters with texts in several languages (Paradym): limit the selectors to one, e.g. `en`. |
 
-Screenshots the adapters take (`takeScreenshot`) are written to the directory Maestro is
-started from, as `<name>.png`. Each test overwrites the previous test's files.
+Screenshots the adapters take (`takeScreenshot`) are saved with Maestro's debug output, in
+`~/.maestro/tests/<date>_<time>/<flow name>/takeScreenshot/<name>.png`; `maestro test`
+prints that folder at the end.
 
 ### Reaching the stack from a device
 
@@ -96,6 +98,6 @@ started from, as `<name>.png`. Each test overwrites the previous test's files.
 - Real devices: Android phones over USB work (the Paradym results come from one). iPhones
   and device farms are not covered; for those, use a cloud that runs Maestro flows or Appium
   (see `docs/design.md`).
-- So far the flows ran through Maestro's MCP server; `run.sh` with the Maestro CLI has not
-  been tried end to end.
+- The flows ran through Maestro's MCP server and `maestro test` (the Paradym adapter);
+  `run.sh` itself has not been tried end to end.
 - Maestro must run its JavaScript with GraalJS (the default in current versions).

@@ -1,5 +1,6 @@
-# Paradym's app PIN, on its own number pad ("Gib deine App-PIN ein" to unlock,
-# "Sende Daten mit deinem PIN-Code" to confirm a presentation).
+# Paradym's app PIN, on its own number pad (output.t.unlockPin to unlock the app,
+# output.t.confirmPin to confirm a presentation). The digit keys are matched by their digit,
+# which is the same in every language.
 # With WALLET_PIN set, taps its digits. Without it, waits up to two minutes for a person to
 # enter the PIN on the phone.
 appId: ${WALLET_APP_ID}
@@ -18,5 +19,5 @@ appId: ${WALLET_APP_ID}
                 index: 0
             - evalScript: ${output.pin.next = output.pin.next + 1}
 - extendedWaitUntil:
-    notVisible: '(Gib deine App-PIN ein|Sende Daten mit deinem PIN-Code)'
+    notVisible: '(${output.t.unlockPin}|${output.t.confirmPin})'
     timeout: 120000
