@@ -64,4 +64,4 @@ Same phone, Paradym set to English, the whole loop through `maestro test`:
 | --- | --- | --- |
 | I-EAA-NOTX | flow passed | Every screen matched by the English texts; card stored, `claims-shown` and `card-shown` answered. |
 | I-PID-SDJWT | failed | Same rejection as in German, on the "Something went wrong" screen. Stepped through by hand. |
-| P-EAA-ONE | failed | The flow reached the PIN confirmation, the PIN was entered, but EUDIPLO recorded `Wallet error: access_denied`. Not explained yet; in German the presentation completed. |
+| P-EAA-ONE | protocol passed | The presentation completed in three of four runs; `verifier-shown` stays "no" as in German. The fourth got `Wallet error: access_denied` when the PIN screen closed after 11 s without sharing. That is what Paradym sends when sharing is stopped (Cancel on the PIN screen, then "Stop" in "Stop sharing?"), reproduced on purpose; the flow taps neither, so the request was most likely stopped on the phone. |
