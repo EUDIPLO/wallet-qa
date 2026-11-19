@@ -24,6 +24,14 @@
 # authenticates with the client secrets committed in this repository, so it is reachable
 # only from inside the stack (Wallet QA uses http://caddy:3000).
 {$EUDIPLO_HOST} {
+    # Signed issuer metadata: wallets that accept application/jwt among other types (e.g. the EU
+    # reference wallet sends "application/jwt; application/json") get the signed JWT. EUDIPLO
+    # (9.1, main) returns it only for Accept exactly application/jwt. The Traefik setup has no such rule.
+    @signed_metadata {
+        path /.well-known/openid-credential-issuer/*
+        header Accept *application/jwt*
+    }
+    request_header @signed_metadata Accept application/jwt
     @management path /api /api/*
     respond @management 404
     reverse_proxy {$EUDIPLO_UPSTREAM:localhost:3000}

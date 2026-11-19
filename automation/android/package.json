@@ -1,0 +1,25 @@
+{
+  "name": "wallet-qa-android-automation",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "Appium tests that drive the EU reference wallet through Wallet QA tests in an Android emulator.",
+  "scripts": {
+    "appium": "appium --address 127.0.0.1 --port 4723 --log-timestamp --log-no-colors",
+    "test": "node --import tsx --test --test-concurrency=1 tests/01-onboarding.test.ts tests/02-issue-pid-sdjwt.test.ts tests/03-present-pid-one-sdjwt.test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.2",
+    "appium": "3.9.0",
+    "appium-uiautomator2-driver": "8.7.3",
+    "tsx": "4.23.13",
+    "typescript": "7.0.2",
+    "webdriverio": "9.32.0"
+  },
+  "engines": {
+    "node": ">=22.19"
+  },
+  "packageManager": "pnpm@11.20.0"
+}

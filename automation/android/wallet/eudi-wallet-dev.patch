@@ -1,0 +1,376 @@
+diff --git a/core-logic/build.gradle.kts b/core-logic/build.gradle.kts
+index f46f889..c12e34c 100644
+--- a/core-logic/build.gradle.kts
++++ b/core-logic/build.gradle.kts
+@@ -34,6 +34,8 @@ moduleConfig {
+ }
+ 
+ dependencies {
++    // Wallet QA: LoTE JWT verification in the dev flavor's WalletQaTrust (same version as wallet-core 0.32.0).
++    implementation("com.nimbusds:nimbus-jose-jwt:9.47")
+     implementation(project(LibraryModule.ResourcesLogic.path))
+     implementation(project(LibraryModule.BusinessLogic.path))
+     implementation(project(LibraryModule.AuthenticationLogic.path))
+diff --git a/core-logic/src/dev/java/eu/europa/ec/corelogic/config/WalletCoreConfigImpl.kt b/core-logic/src/dev/java/eu/europa/ec/corelogic/config/WalletCoreConfigImpl.kt
+index 1b069ad..48c8328 100644
+--- a/core-logic/src/dev/java/eu/europa/ec/corelogic/config/WalletCoreConfigImpl.kt
++++ b/core-logic/src/dev/java/eu/europa/ec/corelogic/config/WalletCoreConfigImpl.kt
+@@ -56,6 +56,28 @@ internal class WalletCoreConfigImpl(
+ 
+     private var _config: EudiWalletConfig? = null
+ 
++    private val loteLocations = SupportedLists(
++        pidProviders = Uri("https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/PIDProviders.jwt"),
++        wrpacProviders = Uri("https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/WRPACProviders.jwt"),
++        wrprcProviders = Uri("https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/WRPRCProviders.jwt"),
++        pubEaaProviders = Uri("https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/PubEAAProviders.jwt"),
++    )
++
++    private val loteSigner by lazy {
++        resourceProvider.getX509CertificateFromRaw(R.raw.pidissuerca02_eu)
++    }
++
++    // Wallet QA: trusts the Wallet QA test root (public/trust/wallet-qa-test-root.der in Wallet QA)
++    // for issuers, issuer metadata and readers, in addition to the EU lists.
++    private val walletQaTrust by lazy {
++        WalletQaTrust(
++            context = resourceProvider.provideContext(),
++            walletQaRoots = listOf(resourceProvider.getX509CertificateFromRaw(R.raw.wallet_qa_test_root)),
++            loteLocations = loteLocations,
++            loteSignerTrustAnchors = listOf(loteSigner),
++        )
++    }
++
+     override val isRegistrationCheckEnabled: Boolean by lazy {
+         runBlocking { registrationCheckProvider.isEnabled() }
+     }
+@@ -105,14 +127,7 @@ internal class WalletCoreConfigImpl(
+                     }
+ 
+                     configureEtsiTrust {
+-                        loteLocations(
+-                            SupportedLists(
+-                                pidProviders = Uri("https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/PIDProviders.jwt"),
+-                                wrpacProviders = Uri("https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/WRPACProviders.jwt"),
+-                                wrprcProviders = Uri("https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/WRPRCProviders.jwt"),
+-                                pubEaaProviders = Uri("https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/PubEAAProviders.jwt"),
+-                            )
+-                        )
++                        loteLocations(loteLocations)
+ 
+                         classifications(
+                             AttestationClassifications(
+@@ -129,15 +144,15 @@ internal class WalletCoreConfigImpl(
+                             )
+                         )
+ 
+-                        loteSignerTrustAnchors(
+-                            resourceProvider.getX509CertificateFromRaw(R.raw.pidissuerca02_eu)
+-                        )
++                        loteSignerTrustAnchors(loteSigner)
+ 
+                         relaxCertificateProfiles()
+                         pkixRevocationPolicy(PkixRevocationPolicy.Disabled)
+                     }
+ 
+                     configureIssuerTrust {
++                        // Wallet QA: Wallet QA test root alongside the EU lists (see WalletQaTrust).
++                        trustSource(walletQaTrust.isChainTrusted)
+                         policy {
+                             default(TrustPolicy.Action.INFORM)
+                             forContext(VerificationContext.PID, TrustPolicy.Action.ENFORCE)
+@@ -161,6 +176,8 @@ internal class WalletCoreConfigImpl(
+                     }
+ 
+                     configureReaderAuthentication {
++                        // Wallet QA: Wallet QA test root alongside the EU lists (see WalletQaTrust).
++                        trustSource(walletQaTrust.isChainTrusted)
+                         enforceIfPresent()
+                     }
+ 
+@@ -224,8 +241,41 @@ internal class WalletCoreConfigImpl(
+                     )
+                     .build(),
+                 order = 1
++            ),
++        ) + walletQaIssuers
++
++    // Wallet QA: the EUDIPLO tenants of the local stack (https://localhost:3443 through adb reverse).
++    // The wallet only accepts credential offers from configured issuers. These tenants do not
++    // require wallet attestation and advertise token_endpoint_auth_methods_supported ["none"].
++    private val walletQaIssuers: List<VciConfig>
++        get() = listOf("base", "issuer-dpop-v1").mapIndexed { index, tenant ->
++            VciConfig(
++                issuerUrl = "https://localhost:3443/issuers/$tenant",
++                config = OpenId4VciManager.Config.Builder()
++                    .withClientAuthenticationType(
++                        OpenId4VciManager.ClientAuthenticationType.None(
++                            clientId = "wallet-qa-eudi-dev"
++                        )
++                    )
++                    // Wallet QA's issuers require no key attestation, so the ETSI profile (attestation-
++                    // backed proofs only) finds no common proof type; plain OpenID4VCI JWT proofs it is.
++                    .withIssuanceProofProfile(OpenId4VciManager.IssuanceProofProfile.Standard)
++                    .withAuthFlowRedirectionURI(BuildConfig.ISSUE_AUTHORIZATION_DEEPLINK)
++                    .withParUsage(OpenId4VciManager.Config.ParUsage.IF_SUPPORTED)
++                    .withDPopConfig(DPopConfig.Default)
++                    .withSupportedCredentialReusePolicies(
++                        CredentialReusePolicies.Supported(
++                            policyTypes = setOf(
++                                EudiReusePolicyType.RotatingBatch,
++                                EudiReusePolicyType.OnceOnly,
++                                EudiReusePolicyType.LimitedTime,
++                            )
++                        )
++                    )
++                    .build(),
++                order = 100 + index
+             )
+-        )
++        }
+ 
+     override val documentIssuanceConfig: DocumentIssuanceConfig
+         get() = DocumentIssuanceConfig(
+diff --git a/core-logic/src/dev/java/eu/europa/ec/corelogic/config/WalletQaTrust.kt b/core-logic/src/dev/java/eu/europa/ec/corelogic/config/WalletQaTrust.kt
+new file mode 100644
+index 0000000..3b4a661
+--- /dev/null
++++ b/core-logic/src/dev/java/eu/europa/ec/corelogic/config/WalletQaTrust.kt
+@@ -0,0 +1,185 @@
++/*
++ * Copyright (c) 2026 European Commission
++ *
++ * Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the European
++ * Commission - subsequent versions of the EUPL (the "Licence"); You may not use this work
++ * except in compliance with the Licence.
++ *
++ * You may obtain a copy of the Licence at:
++ * https://joinup.ec.europa.eu/software/page/eupl
++ *
++ * Unless required by applicable law or agreed to in writing, software distributed under
++ * the Licence is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR CONDITIONS OF
++ * ANY KIND, either express or implied. See the Licence for the specific language
++ * governing permissions and limitations under the Licence.
++ */
++
++package eu.europa.ec.corelogic.config
++
++import android.content.Context
++import android.util.Log
++import com.nimbusds.jose.JWSVerifier
++import com.nimbusds.jose.crypto.ECDSAVerifier
++import com.nimbusds.jose.crypto.RSASSAVerifier
++import com.nimbusds.jwt.SignedJWT
++import eu.europa.ec.eudi.etsi119602.consultation.DownloadSingleLoTE
++import eu.europa.ec.eudi.etsi119602.consultation.LoadLoTEAndPointers
++import eu.europa.ec.eudi.etsi119602.consultation.LoadSingleLoTEWithFileCache
++import eu.europa.ec.eudi.etsi119602.consultation.LotEMeta
++import eu.europa.ec.eudi.etsi119602.consultation.ProvisionTrustAnchorsFromLoTEs
++import eu.europa.ec.eudi.etsi119602.consultation.VerifyJwtSignature
++import eu.europa.ec.eudi.etsi119602.consultation.eu
++import eu.europa.ec.eudi.etsi119602.consultation.eudiwJvm
++import eu.europa.ec.eudi.etsi119602.datamodel.Uri
++import eu.europa.ec.eudi.etsi1196x2.consultation.CertificationChainValidation
++import eu.europa.ec.eudi.etsi1196x2.consultation.DisposableContainer
++import eu.europa.ec.eudi.etsi1196x2.consultation.IsChainTrustedForContextF
++import eu.europa.ec.eudi.etsi1196x2.consultation.IsChainTrustedForEUDIW
++import eu.europa.ec.eudi.etsi1196x2.consultation.NonEmptyList
++import eu.europa.ec.eudi.etsi1196x2.consultation.SupportedLists
++import eu.europa.ec.eudi.etsi1196x2.consultation.ValidateCertificateChain
++import eu.europa.ec.eudi.etsi1196x2.consultation.ValidateCertificateChainUsingDirectTrustJvm
++import eu.europa.ec.eudi.etsi1196x2.consultation.ValidateCertificateChainUsingPKIXJvm
++import eu.europa.ec.eudi.etsi1196x2.consultation.VerificationContext
++import eu.europa.ec.eudi.etsi1196x2.consultation.or
++import io.ktor.client.HttpClient
++import kotlinx.coroutines.CancellationException
++import kotlinx.io.files.Path
++import java.io.ByteArrayInputStream
++import java.security.cert.CertificateFactory
++import java.security.cert.TrustAnchor
++import java.security.cert.X509Certificate
++import java.security.interfaces.ECPublicKey
++import java.security.interfaces.RSAPublicKey
++import kotlin.time.Duration.Companion.hours
++import kotlin.time.Duration.Companion.minutes
++
++/**
++ * Wallet QA test build only: certificate chain trust that accepts chains ending in a Wallet QA
++ * test root in addition to the EU lists of trusted entities (LoTE).
++ *
++ * Wallet Core builds its ETSI trust source internally and does not expose it, so this class builds
++ * the same pipeline as Wallet Core 0.32.0's `EtsiTrustProvider` (with the dev flavor's settings:
++ * relaxed certificate profiles, revocation checks disabled) and puts a static check in front of
++ * it. A chain is trusted when it validates (PKIX) against one of [walletQaRoots]; otherwise the
++ * EU lists decide, exactly as without this class. Nothing is disabled: untrusted chains are still
++ * rejected, and requests signed by any other root still fail.
++ */
++internal class WalletQaTrust(
++    context: Context,
++    walletQaRoots: List<X509Certificate>,
++    loteLocations: SupportedLists<Uri>,
++    loteSignerTrustAnchors: List<X509Certificate>,
++) {
++    private val disposableContainer = DisposableContainer()
++
++    private val pkixNoRevocation = ValidateCertificateChainUsingPKIXJvm(
++        customization = { isRevocationEnabled = false }
++    )
++
++    private val etsi: IsChainTrustedForEUDIW<List<X509Certificate>, TrustAnchor> = run {
++        val loadLoTE = LoadSingleLoTEWithFileCache(
++            // Separate from Wallet Core's "lote-cache" so the two pipelines never share files.
++            cacheDirectory = Path(context.cacheDir.path, "wallet-qa-lote-cache"),
++            downloadSingleLoTE = DownloadSingleLoTE(HttpClient()),
++            fileCacheExpiration = 24.hours,
++        )
++        val loadLoTEAndPointers = LoadLoTEAndPointers(
++            constraints = LoadLoTEAndPointers.Constraints.DoNotLoadOtherPointers,
++            verifyJwtSignature = LoteJwtSignature(
++                signerTrustAnchors = NonEmptyList(loteSignerTrustAnchors.map { TrustAnchor(it, null) }),
++                validateSigner = ValidateCertificateChainUsingDirectTrustJvm or pkixNoRevocation,
++            ),
++            loadLoTE = loadLoTE,
++        )
++        ProvisionTrustAnchorsFromLoTEs.eudiwJvm(
++            loadLoTEAndPointers = loadLoTEAndPointers,
++            svcTypePerCtx = relaxProfiles(SupportedLists.eu()),
++            pkix = pkixNoRevocation,
++        ).cached(disposableContainer, loteLocations, ttl = 20.minutes)
++    }
++
++    private val walletQaAnchors = NonEmptyList(walletQaRoots.map { TrustAnchor(it, null) })
++    private val walletQaRootSet = walletQaRoots.toSet()
++
++    /** Wallet QA roots first, then the EU lists. Use for issuer, metadata and reader trust. */
++    val isChainTrusted: IsChainTrustedForEUDIW<List<X509Certificate>, TrustAnchor> =
++        IsChainTrustedForContextF { chain, verificationContext ->
++            // The x5c chains Wallet QA sends may end with the root itself; PKIX expects the path
++            // without its trust anchor.
++            val path = chain.filterNot { it in walletQaRootSet }
++            val local = if (path.isEmpty()) null else pkixNoRevocation(path, walletQaAnchors)
++            if (local is CertificationChainValidation.Trusted) {
++                Log.d(TAG, "Trusted by a Wallet QA root: $verificationContext")
++                local
++            } else {
++                val listed = etsi(chain, verificationContext)
++                Log.d(TAG, "Not a Wallet QA chain; EU lists say ${listed?.javaClass?.simpleName}: $verificationContext")
++                listed ?: local
++            }
++        }
++
++    private companion object {
++        const val TAG = "WalletQaTrust"
++
++        fun relaxProfiles(
++            eu: SupportedLists<LotEMeta<VerificationContext>>,
++        ): SupportedLists<LotEMeta<VerificationContext>> {
++            fun LotEMeta<VerificationContext>.relax() = copy(
++                svcTypePerCtx = svcTypePerCtx.mapValues { (_, v) -> v.copy(endEntityProfile = null) }
++            )
++            return eu.copy(
++                pidProviders = eu.pidProviders?.relax(),
++                walletProviders = eu.walletProviders?.relax(),
++                wrpacProviders = eu.wrpacProviders?.relax(),
++                wrprcProviders = eu.wrprcProviders?.relax(),
++                pubEaaProviders = eu.pubEaaProviders?.relax(),
++                qeaProviders = eu.qeaProviders?.relax(),
++                eaaProviders = eu.eaaProviders.mapValues { (_, v) -> v.relax() },
++            )
++        }
++    }
++}
++
++/** Same as Wallet Core 0.32.0's internal `LoteJwtVerifier`: verifies a LoTE JWT signed by an x5c chain. */
++private class LoteJwtSignature(
++    private val signerTrustAnchors: NonEmptyList<TrustAnchor>,
++    private val validateSigner: ValidateCertificateChain<List<X509Certificate>, TrustAnchor>,
++) : VerifyJwtSignature {
++    override suspend fun invoke(jwt: String): VerifyJwtSignature.Outcome = try {
++        val signedJwt = SignedJWT.parse(jwt)
++        val x5c = signedJwt.header.x509CertChain
++        if (x5c.isNullOrEmpty()) {
++            VerifyJwtSignature.Outcome.NotVerified(IllegalArgumentException("JWT header has no x5c chain"))
++        } else {
++            val factory = CertificateFactory.getInstance("X.509")
++            val chain = x5c.map {
++                factory.generateCertificate(ByteArrayInputStream(it.decode())) as X509Certificate
++            }
++            val signer = chain.first().apply { checkValidity() }
++            when (val validation = validateSigner(chain, signerTrustAnchors)) {
++                is CertificationChainValidation.NotTrusted ->
++                    VerifyJwtSignature.Outcome.NotVerified(validation.cause)
++
++                is CertificationChainValidation.Trusted -> {
++                    val verifier: JWSVerifier? = when (val key = signer.publicKey) {
++                        is ECPublicKey -> ECDSAVerifier(key)
++                        is RSAPublicKey -> RSASSAVerifier(key)
++                        else -> null
++                    }
++                    when {
++                        verifier == null -> VerifyJwtSignature.Outcome.NotVerified(
++                            UnsupportedOperationException("Unsupported key type: ${signer.publicKey.algorithm}")
++                        )
++                        signedJwt.verify(verifier) -> VerifyJwtSignature.Outcome.Verified(jwt)
++                        else -> VerifyJwtSignature.Outcome.NotVerified(SecurityException("JWT signature verification failed"))
++                    }
++                }
++            }
++        }
++    } catch (e: CancellationException) {
++        throw e
++    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
++        VerifyJwtSignature.Outcome.NotVerified(e)
++    }
++}
+diff --git a/core-logic/src/main/java/eu/europa/ec/corelogic/controller/WalletCoreDocumentsController.kt b/core-logic/src/main/java/eu/europa/ec/corelogic/controller/WalletCoreDocumentsController.kt
+index cff6fe4..ea8d75a 100644
+--- a/core-logic/src/main/java/eu/europa/ec/corelogic/controller/WalletCoreDocumentsController.kt
++++ b/core-logic/src/main/java/eu/europa/ec/corelogic/controller/WalletCoreDocumentsController.kt
+@@ -798,6 +798,8 @@ class WalletCoreDocumentsControllerImpl(
+             manager.resolveDocumentOffer(offerUri) { result ->
+                 when (result) {
+                     is OfferResult.Failure -> {
++                        // Wallet QA: log why an offer failed; the UI shows only a generic message.
++                        android.util.Log.w("WalletQa", "Credential offer resolution failed", result.cause)
+                         val untrustedReason = result.cause.toUntrustedIssuerReasonOrNull()
+ 
+                         trySendBlocking(
+@@ -1199,6 +1201,8 @@ class WalletCoreDocumentsControllerImpl(
+         val listener = OpenId4VciManager.OnIssueEvent { event ->
+             when (event) {
+                 is IssueEvent.DocumentFailed -> {
++                    // Wallet QA: log why issuance failed; the UI shows only a generic message.
++                    android.util.Log.w("WalletQa", "Document issuance failed: ${event.docType}", event.cause)
+                     if (event.cause.toUntrustedIssuerReasonOrNull() != null) {
+                         untrustedDocuments[event.docType] = event.name
+                     } else {
+@@ -1279,6 +1283,8 @@ class WalletCoreDocumentsControllerImpl(
+                 }
+ 
+                 is IssueEvent.Failure -> {
++                    // Wallet QA: log why issuance failed; the UI shows only a generic message.
++                    android.util.Log.w("WalletQa", "Issuance failed", event.cause)
+                     val untrustedReason = event.cause.toUntrustedIssuerReasonOrNull()
+ 
+                     trySendBlocking(
+diff --git a/network-logic/src/main/res/xml/network_security_config.xml b/network-logic/src/main/res/xml/network_security_config.xml
+index b6bf2ee..6713a4e 100644
+--- a/network-logic/src/main/res/xml/network_security_config.xml
++++ b/network-logic/src/main/res/xml/network_security_config.xml
+@@ -16,4 +16,15 @@
+ 
+ <network-security-config>
+     <base-config cleartextTrafficPermitted="false" />
++    <!-- Wallet QA: the local test stack (https://localhost:8443 Wallet QA, :3443 EUDIPLO, reached
++         through adb reverse) serves certificates from the Wallet QA TLS Test Root, which is
++         name-constrained to localhost. Trusted for localhost only, in addition to the system CAs.
++         The certificate is copied in by Wallet QA's build-wallet.sh. -->
++    <domain-config cleartextTrafficPermitted="false">
++        <domain includeSubdomains="false">localhost</domain>
++        <trust-anchors>
++            <certificates src="system" />
++            <certificates src="@raw/wallet_qa_tls_root" />
++        </trust-anchors>
++    </domain-config>
+ </network-security-config>
+\ No newline at end of file

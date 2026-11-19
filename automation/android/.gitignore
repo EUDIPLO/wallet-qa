@@ -1,0 +1,8 @@
+artifacts/
+node_modules/
+*.apk
+*.aab
+*.keystore
+*.jks
+.work/
+build/

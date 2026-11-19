@@ -1,0 +1,9 @@
+{
+  "$schema": "https://eudiplo.dev/schemas/v1/KeyChainDefaultsConfigFile.schema.json",
+  "metadata": {
+    "generation": 1
+  },
+  "spec": {
+    "access": "access"
+  }
+}
