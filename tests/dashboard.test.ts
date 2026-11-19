@@ -30,7 +30,7 @@ class Element {
   }
 }
 
-async function page(options: { path?: string; search?: string; storage?: Map<string, string>; backend: { runs: Run[]; current?: Run; gone?: boolean; workspaceGone?: boolean } }) {
+async function page(options: { path?: string; search?: string; storage?: Map<string, string>; confirm?: boolean; backend: { runs: Run[]; current?: Run; gone?: boolean; workspaceGone?: boolean } }) {
   const storage = options.storage ?? new Map<string, string>();
   const elements = new Map([...html.matchAll(/id="([^"]+)"/g)].map((match) => [match[1], new Element()]));
   const events: Record<string, () => void> = {};
@@ -40,7 +40,7 @@ async function page(options: { path?: string; search?: string; storage?: Map<str
   const { backend } = options;
   const context = vm.createContext({
     document,
-    window: { addEventListener: document.addEventListener, location: { assign: (uri: string) => navigation.push(uri), search: options.search ?? '', pathname: options.path ?? `/w/${WS}`, origin: 'https://qa.test' } },
+    window: { confirm: () => options.confirm ?? true, addEventListener: document.addEventListener, location: { assign: (uri: string) => navigation.push(uri), search: options.search ?? '', pathname: options.path ?? `/w/${WS}`, origin: 'https://qa.test' } },
     localStorage: { getItem: (k: string) => storage.get(k) ?? null, setItem: (k: string, v: string) => storage.set(k, v), removeItem: (k: string) => storage.delete(k) },
     fetch: async (url: string, init: RequestInit = {}) => {
       const method = init.method ?? 'GET';
@@ -57,6 +57,8 @@ async function page(options: { path?: string; search?: string; storage?: Map<str
           { tenantId: 'issuer-dpop-v1', profileIds: ['dpop-v1'], description: 'DPoP issuer', accessCertificate: null },
         ],
       });
+      if (url === `/v1/workspaces/${WS}/publish` && method === 'POST') return Response.json({ tests: [{}, {}] }, { status: 201 });
+      if (url === '/v1/uploads' && method === 'POST') return Response.json({ error: { message: 'Invalid JSON body' } }, { status: 400 });
       if (url === '/v1/workspaces' && method === 'POST') return Response.json({ id: WS, wallet: { name: 'W' } }, { status: 201 });
       if (url === `/v1/workspaces/${WS}`) return backend.workspaceGone ? Response.json({ error: { message: 'Workspace not found' } }, { status: 404 }) : Response.json({ id: WS, tester: 'Alice', wallet: { name: 'EUDI Wallet', version: '1.4.2', platform: 'android', device: 'Pixel 8' } });
       if (url === `/v1/workspaces/${WS}/runs`) {
@@ -175,4 +177,35 @@ test('the page shows the instance trust setup on the setup and workspace views',
     assert.match(tenants, /issuer-dpop-v1.*no access certificate/);
     assert.match(browser.el('instanceRoot').textContent, /SHA-256 AB:CD/);
   }
+});
+
+test('Publish results asks first and reports how many results it published', async () => {
+  const declined = await page({ confirm: false, backend: { runs: [] } });
+  await declined.el('publishButton').onclick!(); await declined.settle();
+  assert.equal(declined.requests.filter((r) => r.url.endsWith('/publish')).length, 0);
+
+  const accepted = await page({ backend: { runs: [] } });
+  await accepted.el('publishButton').onclick!(); await accepted.settle();
+  const request = accepted.requests.find((r) => r.url === `/v1/workspaces/${WS}/publish`);
+  assert.equal(request?.method, 'POST');
+  assert.deepEqual(request?.body, {});
+  assert.equal(accepted.el('message').textContent, 'Published 2 test results to /results.');
+});
+
+test('Publishing an upload needs a file and explains a file that is not JSON', async () => {
+  const view = await page({ path: '/', backend: { runs: [] } });
+  assert.equal(view.el('uploadReport').hidden, false);
+  // The server answers a body that is not JSON with 400 "Invalid JSON body" (tests/published.test.ts).
+  (view.el('uploadFile') as unknown as { files: unknown[] }).files = [];
+  await view.el('uploadButton').onclick!(); await view.settle();
+  assert.equal(view.el('message').textContent, 'Choose a workspace JSON report first.');
+  (view.el('uploadFile') as unknown as { files: unknown[] }).files = [{ text: async () => '{}' }];
+  await view.el('uploadButton').onclick!(); await view.settle();
+  assert.equal(view.el('message').textContent, 'Could not publish: the file is not JSON');
+});
+
+test('the upload box is hidden while editing a workspace', async () => {
+  const view = await page({ backend: { runs: [] } });
+  await view.el('editWorkspace').onclick!(); await view.settle();
+  assert.equal(view.el('uploadReport').hidden, true);
 });

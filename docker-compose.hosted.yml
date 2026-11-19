@@ -1,4 +1,4 @@
-# Hosted Wallet QA, e.g. wallet-testing.eudiplo.dev. Applied on top of docker-compose.yml:
+# Hosted Wallet QA, e.g. conformance.eudiplo.dev. Applied on top of docker-compose.yml:
 #
 #   docker compose -p wallet-qa --env-file .env.hosted \
 #     -f docker-compose.yml -f docker-compose.hosted.yml up --build -d --wait

@@ -405,3 +405,29 @@ summary {
 [hidden] {
   display: none !important;
 }
+
+/* Published results page */
+.result {
+  border-bottom:1px solid #e5ebee;
+  padding:16px 0;
+}
+
+.result h3 {
+  margin:0 0 4px;
+}
+
+.result p {
+  margin:0 0 4px;
+}
+
+.result .table-scroll {
+  overflow-x:auto;
+}
+
+.result table {
+  min-width:560px;
+}
+
+.result td:nth-child(4),.result td:nth-child(2) {
+  white-space:nowrap;
+}

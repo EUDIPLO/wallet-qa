@@ -7,14 +7,24 @@ import path from 'node:path';
 import fs from 'node:fs';
 import QRCode from 'qrcode';
 import { CATALOG_VERSION } from './testing/catalog.js';
-import { Engine, ApiError, liveRun } from './testing/engine.js';
+import { Engine, ApiError, equalSecret, liveRun } from './testing/engine.js';
+import {
+  feed,
+  PublishError,
+  publishFromRuns,
+  publishFromUpload,
+} from './testing/published.js';
 import {
   auditReport,
   junitReport,
   workspaceJunitReport,
 } from './testing/report.js';
 import type { ManualAnswer, Workspace } from './testing/types.js';
-import { MissingRun } from './testing/store.js';
+import {
+  MissingRun,
+  PublishedStoreFull,
+  type PublishedStore,
+} from './testing/store.js';
 import type { TenantTrust } from './testing/trust.js';
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const object = (value: unknown): value is Record<string, unknown> =>
@@ -58,8 +68,23 @@ function walletInput(value: unknown): Workspace['wallet'] {
 // beyond a trusted network.
 export function createApp(
   engine: Engine,
-  options: { publicDir: string; publicOrigin: string; trust?: () => TenantTrust[] },
+  options: {
+    publicDir: string;
+    publicOrigin: string;
+    trust?: () => TenantTrust[];
+    /** Published results; without it the publish routes answer 404. */
+    published?: PublishedStore;
+    /** Bearer token that may remove published results; without it removal is off. */
+    adminToken?: string;
+  },
 ) {
+  const published = () => {
+    if (!options.published) throw new ApiError(404, 'Publishing is not enabled');
+    return options.published;
+  };
+  // The public feed is serialized once and rebuilt only after a publish or removal,
+  // so anonymous readers cannot make the process clone and sort the store per request.
+  let feedCache: string | undefined;
   const app = express();
   app.disable('x-powered-by');
   app.use((_req, res, next) => {
@@ -122,6 +147,19 @@ export function createApp(
       }
 
       res.type('application/oauth-authz-req+jwt').send(response);
+    },
+  );
+  // A self-reported result: a workspace JSON report from another instance. It
+  // carries the audit events of every run, so it gets a larger body limit.
+  app.post(
+    '/v1/uploads',
+    express.json({ limit: '5mb' }),
+    async (req, res) => {
+      const store = published();
+      const result = publishFromUpload(req.body, engine.catalog, options.publicOrigin);
+      await store.add(result);
+      feedCache = undefined;
+      res.status(201).location('/v1/published').json(result);
     },
   );
   app.use(express.json({ limit: '64kb' }));
@@ -207,6 +245,39 @@ export function createApp(
         runs: runs.map(auditReport),
       });
   });
+  app.post('/v1/workspaces/:ws/publish', async (req, res) => {
+    // A JSON content type needs a CORS preflight, so another site cannot make a
+    // logged-in tester's browser publish a workspace with a plain form post.
+    if (!req.is('application/json'))
+      throw new ApiError(415, 'Expected Content-Type: application/json');
+    const store = published();
+    const workspace = await engine.workspace(String(req.params.ws));
+    const runs = await engine.runs(workspace.id);
+    const record = publishFromRuns(workspace, runs, options.publicOrigin);
+    await store.add(record);
+    feedCache = undefined;
+    res.status(201).location('/v1/published').json(record);
+  });
+  // The public feed of published results. Readable without the team login.
+  app.get('/v1/published', async (_req, res) => {
+    const store = published();
+    feedCache ??= JSON.stringify(feed(await store.list(), engine.catalog));
+    res.set({
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'public, max-age=60',
+    });
+    res.type('application/json').send(feedCache);
+  });
+  app.delete('/v1/published/:id', async (req, res) => {
+    const store = published();
+    const token = /^Bearer (.+)$/.exec(req.get('authorization') ?? '')?.[1];
+    if (!options.adminToken || !token || !equalSecret(token, options.adminToken))
+      throw new ApiError(403, 'Removing published results needs the admin token');
+    if (!(await store.delete(String(req.params.id))))
+      throw new ApiError(404, 'Published result not found');
+    feedCache = undefined;
+    res.status(204).end();
+  });
   app.get('/v1/runs/:id', async (req, res) => {
     let run = await lookup(req);
     const waitMs = integer(req.query.waitMs, 0, 0, 25000);
@@ -291,6 +362,9 @@ export function createApp(
       run ? `/w/${encodeURIComponent(run.owner)}?run=${run.id}` : '/',
     );
   });
+  app.get('/results', (_req, res) =>
+    res.sendFile(path.join(options.publicDir, 'results.html')),
+  );
   // The page reads the workspace from the path: /w/<workspace id>.
   app.get(['/', '/w/:ws'], (_req, res) =>
     res.sendFile(path.join(options.publicDir, 'index.html')),
@@ -300,6 +374,9 @@ export function createApp(
   });
   app.use(
     (error: unknown, _req: Request, res: Response, _next: NextFunction) => {
+      if (error instanceof PublishError) error = new ApiError(400, error.message);
+      if (error instanceof PublishedStoreFull)
+        error = new ApiError(409, 'Published results are at their limit; ask the operator to remove old ones');
       if (res.headersSent) return;
       const status =
         error instanceof ApiError

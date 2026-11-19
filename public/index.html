@@ -47,6 +47,12 @@
     <button id="joinButton" type="button" class="secondary">Join</button>
     <p id="lastWorkspace" hidden><button id="resumeWorkspace" type="button" class="secondary">Continue the last workspace</button></p>
   </div>
+  <div id="uploadReport">
+    <h3>Publish a report from another instance</h3>
+    <p class="muted">Upload a workspace JSON report (Reports → JSON) to the public <a href="/results">results page</a>. It is marked self-reported. Only the wallet, build, platform, device, versions and verdicts are published.</p>
+    <label>Workspace JSON report <input id="uploadFile" type="file" accept="application/json,.json"></label>
+    <button id="uploadButton" type="button" class="secondary">Publish as self-reported</button>
+  </div>
 </section>
 
 <section id="joinPanel" hidden>
@@ -65,6 +71,9 @@
     <h3>Reports</h3>
     <button id="reportJunit" type="button" class="secondary">JUnit XML</button>
     <button id="reportJson" type="button" class="secondary">JSON</button>
+    <h3>Publish</h3>
+    <p class="muted">Publishes the latest finished result of each test to the public <a href="/results">results page</a>: wallet, build, platform, device, versions and verdicts. Your name, notes and checklist answers are not published. Do not put personal data in the wallet or device fields.</p>
+    <button id="publishButton" type="button" class="secondary">Publish results</button>
   </section>
 
   <div>

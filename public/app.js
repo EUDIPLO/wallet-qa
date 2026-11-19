@@ -39,7 +39,7 @@ function walletFromForm() {
 function showSetup(editing) {
   el('setup').hidden = false; el('workspaceView').hidden = true;
   el('createWorkspace').textContent = editing ? 'Save' : 'Create workspace';
-  el('cancelEdit').hidden = !editing; el('joinExisting').hidden = !!editing;
+  el('cancelEdit').hidden = !editing; el('joinExisting').hidden = !!editing; el('uploadReport').hidden = !!editing;
   const last = store.get(lastWorkspaceKey);
   el('lastWorkspace').hidden = editing || !last;
 }
@@ -282,6 +282,23 @@ el('reportJunit').onclick = async () => {
 };
 el('reportJson').onclick = async () => {
   download(`wallet-qa-${workspaceId}.json`, JSON.stringify(await api(`/workspaces/${ws()}/report`), null, 2), 'application/json');
+};
+const publishWarning = 'Published results are public and stay until an operator removes them. Publish now?';
+el('publishButton').onclick = async () => {
+  if (!window.confirm(publishWarning)) return;
+  try {
+    const result = await api(`/workspaces/${ws()}/publish`, { method: 'POST', body: '{}' });
+    message(`Published ${result.tests.length} test result${result.tests.length === 1 ? '' : 's'} to /results.`);
+  } catch (error) { message(`Could not publish: ${error.message}`); }
+};
+el('uploadButton').onclick = async () => {
+  const file = el('uploadFile').files?.[0];
+  if (!file) { message('Choose a workspace JSON report first.'); return; }
+  if (!window.confirm(publishWarning)) return;
+  try {
+    const result = await api('/uploads', { method: 'POST', body: await file.text() });
+    message(`Published ${result.tests.length} self-reported test result${result.tests.length === 1 ? '' : 's'} to /results.`);
+  } catch (error) { message(`Could not publish: ${error.status === 400 && error.message === 'Invalid JSON body' ? 'the file is not JSON' : error.message}`); }
 };
 
 // ----------------------------------------------------------------- run list

@@ -10,7 +10,11 @@ import {
   createBackendRegistry,
   loadBackendProfiles,
 } from './testing/backends.js';
-import { FileRunStore, FileWorkspaceStore } from './testing/store.js';
+import {
+  FilePublishedStore,
+  FileRunStore,
+  FileWorkspaceStore,
+} from './testing/store.js';
 import { TrustMonitor } from './testing/trust.js';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const publicDir = path.join(root, 'public');
@@ -47,6 +51,17 @@ const dataFile = process.env.QA_DATA_FILE ?? path.resolve('data/runs.json');
 const workspaces = await new FileWorkspaceStore(
   path.join(path.dirname(dataFile), 'workspaces.json'),
 ).init();
+// Published results are kept until an operator removes them, not for QA_RETENTION_HOURS.
+const publishedMax = Number(process.env.QA_PUBLISHED_MAX ?? 1000);
+if (!Number.isInteger(publishedMax) || publishedMax < 1 || publishedMax > 100000)
+  throw new Error('QA_PUBLISHED_MAX must be between 1 and 100000');
+const published = await new FilePublishedStore(
+  path.join(path.dirname(dataFile), 'published.json'),
+  publishedMax,
+).init();
+const adminToken = process.env.QA_ADMIN_TOKEN || undefined;
+if (adminToken && adminToken.length < 32)
+  throw new Error('QA_ADMIN_TOKEN must have at least 32 characters');
 const engine = new Engine(store, workspaces, backend, {
   publicOrigin: origin,
   retentionMs: retentionHours * 3600000,
@@ -64,7 +79,13 @@ const trust = new TrustMonitor(
   existsSync(testRootFile) ? new X509Certificate(readFileSync(testRootFile)) : undefined,
 );
 trust.start();
-const app = createApp(engine, { publicDir, publicOrigin: origin, trust: () => trust.current() });
+const app = createApp(engine, {
+  publicDir,
+  publicOrigin: origin,
+  trust: () => trust.current(),
+  published,
+  adminToken,
+});
 // Loopback by default; Docker sets HOST=0.0.0.0 so the proxy container can reach it.
 const server = app.listen(port, process.env.HOST ?? '127.0.0.1', () =>
   console.log(`Wallet QA listening on ${origin}`),

@@ -1,6 +1,6 @@
 # Hosting Wallet QA
 
-A hosted instance (e.g. `wallet-testing.eudiplo.dev`) is the easy setup for testers: no Docker,
+A hosted instance (e.g. `conformance.eudiplo.dev`) is the easy setup for testers: no Docker,
 no TLS root on the phone, no `adb reverse`, physical iPhones work, and the whole team shares
 workspaces and results. The local stack stays for developing Wallet QA itself.
 
@@ -49,7 +49,7 @@ Both behave the same towards testers and wallets:
 | EUDIPLO tenant config | committed `eudiplo-config/` | the same, from the image, plus the deployment's overlay (`QA_FIXTURES_DIR/overlay`) |
 | Key chains | committed, for `localhost` | in the overlay: generated for `EUDIPLO_HOST`, or the deployment's own |
 | `/trust` on Wallet QA | committed `public/trust/` | `QA_FIXTURES_DIR/public` |
-| Wallet QA page and API | open on `localhost` | basic auth (one team login); wallet-facing paths stay open |
+| Wallet QA page and API | open on `localhost` | basic auth (one team login); wallet-facing paths and the published results stay open |
 | EUDIPLO management API (`/api`) | on `localhost` | blocked at the proxy; only Wallet QA reaches it inside the stack |
 | EUDIPLO database | lost on `down` | `eudiplo-db` volume |
 
@@ -57,8 +57,8 @@ Both behave the same towards testers and wallets:
 
 - A Linux VM with Docker Engine and the Compose plugin (2.24 or later), 2 vCPU and 4 GB RAM
   are plenty.
-- Two DNS names pointing at it, for example `wallet-testing.eudiplo.dev` (Wallet QA) and
-  `issuer.wallet-testing.eudiplo.dev` (EUDIPLO).
+- Two DNS names pointing at it, for example `conformance.eudiplo.dev` (Wallet QA) and
+  `issuer.conformance.eudiplo.dev` (EUDIPLO).
 - Ports 80 and 443 open to the internet (Let's Encrypt and the wallets), served either by the
   bundled Caddy or by your existing Traefik.
 
@@ -68,7 +68,7 @@ On a trusted machine with Node and OpenSSL, in a checkout of this repository:
 
 ```sh
 pnpm install
-pnpm fixtures:generate issuer.wallet-testing.eudiplo.dev ../wallet-qa-fixtures
+pnpm fixtures:generate issuer.conformance.eudiplo.dev ../wallet-qa-fixtures
 ```
 
 This creates:
@@ -156,12 +156,12 @@ Caddy requests the certificates on the first request to each hostname; give it a
 Then:
 
 ```sh
-curl -s https://wallet-testing.eudiplo.dev/health/ready
-curl -s -o /dev/null -w '%{http_code}\n' https://wallet-testing.eudiplo.dev/                   # 401
-curl -s -o /dev/null -w '%{http_code}\n' -u 'qa:<password>' https://wallet-testing.eudiplo.dev/ # 200
-curl -s https://wallet-testing.eudiplo.dev/trust/trust.json      # eudiploHost = your EUDIPLO_HOST
-curl -s -o /dev/null -w '%{http_code}\n' https://issuer.wallet-testing.eudiplo.dev/api/version   # 404
-EUDIPLO_BASE_URL=http://localhost:3000 EUDIPLO_PUBLIC_URL=https://issuer.wallet-testing.eudiplo.dev pnpm smoke
+curl -s https://conformance.eudiplo.dev/health/ready
+curl -s -o /dev/null -w '%{http_code}\n' https://conformance.eudiplo.dev/                   # 401
+curl -s -o /dev/null -w '%{http_code}\n' -u 'qa:<password>' https://conformance.eudiplo.dev/ # 200
+curl -s https://conformance.eudiplo.dev/trust/trust.json      # eudiploHost = your EUDIPLO_HOST
+curl -s -o /dev/null -w '%{http_code}\n' https://issuer.conformance.eudiplo.dev/api/version   # 404
+EUDIPLO_BASE_URL=http://localhost:3000 EUDIPLO_PUBLIC_URL=https://issuer.conformance.eudiplo.dev pnpm smoke
 ```
 
 `pnpm smoke` needs `pnpm install` on the server and starts (and deletes) one EUDIPLO session
@@ -240,6 +240,17 @@ volumes created by these images already belong to it. Two cases need a hand:
 - Open without login, because wallets call them: `/protocol/*` (fault request objects),
   `/trust/*`, `/health/*`, `/r/*` (redirects to the workspace page, which asks for the login),
   and the EUDIPLO hostname apart from `/api`.
+- Open without login by design: the published results page and its feed (`/results`,
+  `/results.js`, `/styles.css`, `/v1/published`). Publishing, uploads and removal stay
+  behind the login.
+- The login is optional. Without it (remove the basic auth middleware from the proxy, as
+  `conformance.eudiplo.dev` does), anyone with the address can create workspaces, publish and
+  upload; workspace retention and `QA_PUBLISHED_MAX` bound what they can store, and removal
+  still needs `QA_ADMIN_TOKEN`.
+- Published results stay until removed. Set `QA_ADMIN_TOKEN` (at least 32 characters,
+  `openssl rand -hex 32`) to remove one with
+  `curl -u 'qa:<password>' -X DELETE -H "Authorization: Bearer $QA_ADMIN_TOKEN" https://$QA_HOST/v1/published/<id>`.
+  Removal requests come in as issues in EUDIPLO/wallet-qa.
 - Workspaces and runs are deleted after `QA_RETENTION_HOURS` without use.
 - Credentials issued here are test credentials; they are worthless outside wallets that
   trust the instance.

@@ -7,10 +7,11 @@ see the [README](../README.md#verdict-rules); for the full test list and rationa
 
 ## Hosted or local?
 
-**Use the hosted instance if your team has one** (e.g. `https://wallet-testing.eudiplo.dev`).
+**Use the hosted instance if your team has one** (e.g. `https://conformance.eudiplo.dev`).
 Then you need only a phone with a wallet dev build that trusts the instance's credential root
-(`/trust/wallet-qa-test-root.der` on the instance, fingerprint in `/trust/trust.json`), and
-the team login for the instance (your browser asks for it once): skip steps 1 to 3 and start at [step 4](#4-create-a-workspace). Any phone works, physical
+(`/trust/wallet-qa-test-root.der` on the instance, fingerprint in `/trust/trust.json`), and,
+if the instance has one, the team login (your browser asks for it once;
+`conformance.eudiplo.dev` has none): skip steps 1 to 3 and start at [step 4](#4-create-a-workspace). Any phone works, physical
 iPhones included, and nothing has to be installed on it besides the wallet. Setting up an
 instance is described in [hosting.md](hosting.md).
 
@@ -171,6 +172,19 @@ In the test list, use **Reports**:
 
 Attach the report (and the audit JSON of failed runs) to the test cycle or bug ticket, with
 the workspace's wallet build.
+
+### Publish the results
+
+**Publish results** puts the latest finished result of each test on the public
+[results page](/results): wallet name, build, platform, device, the catalog and EUDIPLO
+versions, the verdicts and whether a pass was tester-attested. Your name, notes and
+checklist answers are not published. Published results are public and stay until an operator
+removes them, so do not put personal data in the wallet or device fields. To have a result
+removed, open an issue in EUDIPLO/wallet-qa.
+
+Ran the tests on your own instance? Download the **JSON** report there and upload it on the
+start page of a hosted instance under **Publish a report from another instance**. It is shown
+as self-reported, because that instance did not see the runs.
 
 ## Troubleshooting
 

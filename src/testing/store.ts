@@ -1,6 +1,20 @@
 import { mkdir, readFile, rename, open, unlink } from 'node:fs/promises';
 import path from 'node:path';
+import type { PublishedResult } from './published.js';
 import type { Run, Workspace } from './types.js';
+
+/** Writes JSON to a file by atomic rename, readable only by the owner. */
+export async function writeJsonAtomic(file: string, data: unknown) {
+  const temporary = `${file}.tmp`;
+  const handle = await open(temporary, 'w', 0o600);
+  try {
+    await handle.writeFile(JSON.stringify(data));
+    await handle.sync();
+  } finally {
+    await handle.close();
+  }
+  await rename(temporary, file);
+}
 
 export interface RunStore {
   create(run: Run): Promise<Run>;
@@ -57,17 +71,7 @@ export class FileRunStore implements RunStore {
     return result;
   }
   private async commit(next: Map<string, Run>) {
-    if (this.file) {
-      const temporary = `${this.file}.tmp`;
-      const handle = await open(temporary, 'w', 0o600);
-      try {
-        await handle.writeFile(JSON.stringify([...next.values()]));
-        await handle.sync();
-      } finally {
-        await handle.close();
-      }
-      await rename(temporary, this.file);
-    }
+    if (this.file) await writeJsonAtomic(this.file, [...next.values()]);
     this.runs = next;
   }
   async create(run: Run) {
@@ -143,17 +147,7 @@ export class FileWorkspaceStore implements WorkspaceStore {
     const result = this.queue.then(async () => {
       const next = new Map(this.items);
       mutate(next);
-      if (this.file) {
-        const temporary = `${this.file}.tmp`;
-        const handle = await open(temporary, 'w', 0o600);
-        try {
-          await handle.writeFile(JSON.stringify([...next.values()]));
-          await handle.sync();
-        } finally {
-          await handle.close();
-        }
-        await rename(temporary, this.file);
-      }
+      if (this.file) await writeJsonAtomic(this.file, [...next.values()]);
       this.items = next;
     });
     this.queue = result.catch(() => undefined);
@@ -171,5 +165,65 @@ export class FileWorkspaceStore implements WorkspaceStore {
   }
   async delete(id: string) {
     await this.change((next) => next.delete(id));
+  }
+}
+
+export class PublishedStoreFull extends Error {}
+
+export interface PublishedStore {
+  /** Throws PublishedStoreFull when the store holds its maximum number of results. */
+  add(result: PublishedResult): Promise<void>;
+  list(): Promise<PublishedResult[]>;
+  delete(id: string): Promise<boolean>;
+}
+
+/**
+ * Published results in one JSON file next to the runs. Not subject to the
+ * workspace retention: a result stays until an operator removes it.
+ */
+export class FilePublishedStore implements PublishedStore {
+  private queue: Promise<unknown> = Promise.resolve();
+  private items: PublishedResult[] = [];
+  constructor(
+    private file?: string,
+    /** Published results are kept until removed; the cap bounds the file and the public feed. */
+    private max = 1000,
+  ) {}
+  async init() {
+    if (!this.file) return this;
+    await mkdir(path.dirname(this.file), { recursive: true });
+    try {
+      this.items = JSON.parse(await readFile(this.file, 'utf8'));
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
+    return this;
+  }
+  private change<T>(mutate: (next: PublishedResult[]) => T) {
+    const result = this.queue.then(async () => {
+      const next = structuredClone(this.items);
+      const value = mutate(next);
+      if (this.file) await writeJsonAtomic(this.file, next);
+      this.items = next;
+      return value;
+    });
+    this.queue = result.catch(() => undefined);
+    return result;
+  }
+  async add(item: PublishedResult) {
+    await this.change((next) => {
+      if (next.length >= this.max) throw new PublishedStoreFull();
+      next.push(structuredClone(item));
+    });
+  }
+  async list() {
+    return structuredClone(this.items);
+  }
+  async delete(id: string) {
+    return this.change((next) => {
+      const index = next.findIndex((item) => item.id === id);
+      if (index >= 0) next.splice(index, 1);
+      return index >= 0;
+    });
   }
 }
