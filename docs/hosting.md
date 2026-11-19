@@ -243,6 +243,10 @@ volumes created by these images already belong to it. Two cases need a hand:
 - Open without login by design: the published results page and its feed (`/results`,
   `/results.js`, `/styles.css`, `/v1/published`). Publishing, uploads and removal stay
   behind the login.
+- The login is optional. Without it (remove the basic auth middleware from the proxy, as
+  `conformance.eudiplo.dev` does), anyone with the address can create workspaces, publish and
+  upload; workspace retention and `QA_PUBLISHED_MAX` bound what they can store, and removal
+  still needs `QA_ADMIN_TOKEN`.
 - Published results stay until removed. Set `QA_ADMIN_TOKEN` (at least 32 characters,
   `openssl rand -hex 32`) to remove one with
   `curl -u 'qa:<password>' -X DELETE -H "Authorization: Bearer $QA_ADMIN_TOKEN" https://$QA_HOST/v1/published/<id>`.

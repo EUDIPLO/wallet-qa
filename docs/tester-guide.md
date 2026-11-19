@@ -9,8 +9,9 @@ see the [README](../README.md#verdict-rules); for the full test list and rationa
 
 **Use the hosted instance if your team has one** (e.g. `https://conformance.eudiplo.dev`).
 Then you need only a phone with a wallet dev build that trusts the instance's credential root
-(`/trust/wallet-qa-test-root.der` on the instance, fingerprint in `/trust/trust.json`), and
-the team login for the instance (your browser asks for it once): skip steps 1 to 3 and start at [step 4](#4-create-a-workspace). Any phone works, physical
+(`/trust/wallet-qa-test-root.der` on the instance, fingerprint in `/trust/trust.json`), and,
+if the instance has one, the team login (your browser asks for it once;
+`conformance.eudiplo.dev` has none): skip steps 1 to 3 and start at [step 4](#4-create-a-workspace). Any phone works, physical
 iPhones included, and nothing has to be installed on it besides the wallet. Setting up an
 instance is described in [hosting.md](hosting.md).
 
