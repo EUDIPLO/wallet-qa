@@ -140,6 +140,9 @@ retention is short.
    transaction code, live step status, checklist, run controls (revoke, suspend).
 4. Reports per workspace as JUnit XML and JSON, and an audit JSON per run.
 5. **This instance**: the tenants and what the wallet has to trust.
+6. Publishing: the latest result per test to the public `/results` page and its feed,
+   labelled by provenance (recorded by the instance, or self-reported upload), without
+   tester, notes, answers or claim values.
 
 The visible texts and `#liveRun` data attributes are a stable contract (README, *Page contract
 for UI automation*), so UI automation can drive the page without changes.

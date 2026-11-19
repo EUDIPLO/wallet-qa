@@ -49,7 +49,7 @@ Both behave the same towards testers and wallets:
 | EUDIPLO tenant config | committed `eudiplo-config/` | the same, from the image, plus the deployment's overlay (`QA_FIXTURES_DIR/overlay`) |
 | Key chains | committed, for `localhost` | in the overlay: generated for `EUDIPLO_HOST`, or the deployment's own |
 | `/trust` on Wallet QA | committed `public/trust/` | `QA_FIXTURES_DIR/public` |
-| Wallet QA page and API | open on `localhost` | basic auth (one team login); wallet-facing paths stay open |
+| Wallet QA page and API | open on `localhost` | basic auth (one team login); wallet-facing paths and the published results stay open |
 | EUDIPLO management API (`/api`) | on `localhost` | blocked at the proxy; only Wallet QA reaches it inside the stack |
 | EUDIPLO database | lost on `down` | `eudiplo-db` volume |
 
@@ -240,6 +240,13 @@ volumes created by these images already belong to it. Two cases need a hand:
 - Open without login, because wallets call them: `/protocol/*` (fault request objects),
   `/trust/*`, `/health/*`, `/r/*` (redirects to the workspace page, which asks for the login),
   and the EUDIPLO hostname apart from `/api`.
+- Open without login by design: the published results page and its feed (`/results`,
+  `/results.js`, `/styles.css`, `/v1/published`). Publishing, uploads and removal stay
+  behind the login.
+- Published results stay until removed. Set `QA_ADMIN_TOKEN` (at least 32 characters,
+  `openssl rand -hex 32`) to remove one with
+  `curl -u 'qa:<password>' -X DELETE -H "Authorization: Bearer $QA_ADMIN_TOKEN" https://$QA_HOST/v1/published/<id>`.
+  Removal requests come in as issues in EUDIPLO/wallet-qa.
 - Workspaces and runs are deleted after `QA_RETENTION_HOURS` without use.
 - Credentials issued here are test credentials; they are worthless outside wallets that
   trust the instance.

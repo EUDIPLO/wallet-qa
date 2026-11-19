@@ -91,6 +91,8 @@ services:
       EUDIPLO_VERSION: ${EUDIPLO_VERSION:-main}
       QA_DATA_FILE: /app/data/runs.json
       QA_RETENTION_HOURS: ${QA_RETENTION_HOURS:-168}
+      QA_ADMIN_TOKEN: ${QA_ADMIN_TOKEN:-}
+      QA_PUBLISHED_MAX: ${QA_PUBLISHED_MAX:-1000}
     volumes:
       - qa-data:/app/data
     ports: ['127.0.0.1:8787:8787']

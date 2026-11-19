@@ -137,6 +137,10 @@ All IDs in paths are capabilities: workspace IDs are 128-bit random, run IDs UUI
 | POST | `/v1/runs/:id/controls/:control` | Run a control (e.g. revoke) |
 | GET | `/v1/runs/:id/report?format=json\|junit` | Audit report of one run |
 | DELETE | `/v1/runs/:id` | Cancel a run and delete its EUDIPLO sessions |
+| POST | `/v1/workspaces/:ws/publish` | Publish the latest finished result of each test (provenance `instance`) |
+| POST | `/v1/uploads` | Publish an uploaded workspace JSON report (provenance `self-reported`, up to 5 MB) |
+| GET | `/v1/published` | Public feed of published results, with the feature list and its coverage |
+| DELETE | `/v1/published/:id` | Remove a published result; needs `Authorization: Bearer <QA_ADMIN_TOKEN>` |
 | GET | `/r/:sessionId` | Same-device return from the wallet; redirects to the run |
 
 `src/client.ts` (`WalletQaClient`) wraps this for automation: create a workspace, start
@@ -149,6 +153,32 @@ its runs expires after `QA_RETENTION_HOURS` without use. When the instance is
 reachable beyond a trusted network, put SSO or an IP allow-list in front of it at the
 proxy. If testers present a production PID, disclosed values end up in EUDIPLO sessions
 and reports; use QA PIDs.
+
+### Published results
+
+`/results` is a public page of published results, built from the feed at `/v1/published`.
+It is not a certification: an entry is what one tester saw with one wallet build, and anyone
+can repeat it. Each entry says where it came from:
+
+- **Recorded by the instance**: published with **Publish results** in a workspace, from this
+  instance's own run records.
+- **Self-reported**: a workspace JSON report uploaded on the start page. Test labels and
+  features come from this instance's catalog; unknown tests are dropped.
+
+Only the latest finished result per test is published (skipped runs are left out), with
+wallet name, build, platform, device, the catalog and EUDIPLO versions, the verdict and
+whether a pass was tester-attested. Tester names, notes, checklist answers, claim values,
+session and run IDs are never published. Published results are kept in `published.json`
+next to `QA_DATA_FILE` and are not subject to `QA_RETENTION_HOURS`; several results for the
+same wallet build are kept side by side. Remove one with `DELETE /v1/published/<id>` and
+`QA_ADMIN_TOKEN`, or by editing the file while Wallet QA is stopped. At most
+`QA_PUBLISHED_MAX` results (default 1,000) are kept; after that, publishing answers 409
+until results are removed.
+
+Each test lists the features it exercises (authorization code, pre-authorized code, DPoP,
+wallet attestation, presentation, DC API, Annex C, SD-JWT VC, mdoc). They come from the
+step definitions and the tags `dpop`, `wallet-attestation`, `dc-api`, `annex-c`,
+`dc+sd-jwt` and `mso_mdoc`; the feed marks features no ready test covers.
 
 ### Page contract for UI automation
 

@@ -172,6 +172,19 @@ In the test list, use **Reports**:
 Attach the report (and the audit JSON of failed runs) to the test cycle or bug ticket, with
 the workspace's wallet build.
 
+### Publish the results
+
+**Publish results** puts the latest finished result of each test on the public
+[results page](/results): wallet name, build, platform, device, the catalog and EUDIPLO
+versions, the verdicts and whether a pass was tester-attested. Your name, notes and
+checklist answers are not published. Published results are public and stay until an operator
+removes them, so do not put personal data in the wallet or device fields. To have a result
+removed, open an issue in EUDIPLO/wallet-qa.
+
+Ran the tests on your own instance? Download the **JSON** report there and upload it on the
+start page of a hosted instance under **Publish a report from another instance**. It is shown
+as self-reported, because that instance did not see the runs.
+
 ## Troubleshooting
 
 | Symptom | Likely cause |
