@@ -1,6 +1,6 @@
 # Hosting Wallet QA
 
-A hosted instance (e.g. `wallet-testing.eudiplo.dev`) is the easy setup for testers: no Docker,
+A hosted instance (e.g. `conformance.eudiplo.dev`) is the easy setup for testers: no Docker,
 no TLS root on the phone, no `adb reverse`, physical iPhones work, and the whole team shares
 workspaces and results. The local stack stays for developing Wallet QA itself.
 
@@ -57,8 +57,8 @@ Both behave the same towards testers and wallets:
 
 - A Linux VM with Docker Engine and the Compose plugin (2.24 or later), 2 vCPU and 4 GB RAM
   are plenty.
-- Two DNS names pointing at it, for example `wallet-testing.eudiplo.dev` (Wallet QA) and
-  `issuer.wallet-testing.eudiplo.dev` (EUDIPLO).
+- Two DNS names pointing at it, for example `conformance.eudiplo.dev` (Wallet QA) and
+  `issuer.conformance.eudiplo.dev` (EUDIPLO).
 - Ports 80 and 443 open to the internet (Let's Encrypt and the wallets), served either by the
   bundled Caddy or by your existing Traefik.
 
@@ -68,7 +68,7 @@ On a trusted machine with Node and OpenSSL, in a checkout of this repository:
 
 ```sh
 pnpm install
-pnpm fixtures:generate issuer.wallet-testing.eudiplo.dev ../wallet-qa-fixtures
+pnpm fixtures:generate issuer.conformance.eudiplo.dev ../wallet-qa-fixtures
 ```
 
 This creates:
@@ -156,12 +156,12 @@ Caddy requests the certificates on the first request to each hostname; give it a
 Then:
 
 ```sh
-curl -s https://wallet-testing.eudiplo.dev/health/ready
-curl -s -o /dev/null -w '%{http_code}\n' https://wallet-testing.eudiplo.dev/                   # 401
-curl -s -o /dev/null -w '%{http_code}\n' -u 'qa:<password>' https://wallet-testing.eudiplo.dev/ # 200
-curl -s https://wallet-testing.eudiplo.dev/trust/trust.json      # eudiploHost = your EUDIPLO_HOST
-curl -s -o /dev/null -w '%{http_code}\n' https://issuer.wallet-testing.eudiplo.dev/api/version   # 404
-EUDIPLO_BASE_URL=http://localhost:3000 EUDIPLO_PUBLIC_URL=https://issuer.wallet-testing.eudiplo.dev pnpm smoke
+curl -s https://conformance.eudiplo.dev/health/ready
+curl -s -o /dev/null -w '%{http_code}\n' https://conformance.eudiplo.dev/                   # 401
+curl -s -o /dev/null -w '%{http_code}\n' -u 'qa:<password>' https://conformance.eudiplo.dev/ # 200
+curl -s https://conformance.eudiplo.dev/trust/trust.json      # eudiploHost = your EUDIPLO_HOST
+curl -s -o /dev/null -w '%{http_code}\n' https://issuer.conformance.eudiplo.dev/api/version   # 404
+EUDIPLO_BASE_URL=http://localhost:3000 EUDIPLO_PUBLIC_URL=https://issuer.conformance.eudiplo.dev pnpm smoke
 ```
 
 `pnpm smoke` needs `pnpm install` on the server and starts (and deletes) one EUDIPLO session
