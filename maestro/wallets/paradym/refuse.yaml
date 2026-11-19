@@ -1,0 +1,29 @@
+# NOT MAPPED FOR PARADYM YET: copy of the example adapter. Paradym's refusal screens have not
+# been read yet; run a refusal test by hand first and replace these selectors.
+# A request the wallet must refuse (wrong signature, untrusted verifier, nothing to share).
+# Passing does not need a tap: EUDIPLO records the wallet's error response, or, for a silent
+# refusal, the checklist answers below decide. Example selectors: adjust them to your wallet.
+appId: ${WALLET_APP_ID}
+---
+- tapOn:
+    text: Open
+    optional: true
+- extendedWaitUntil:
+    visible: .*(not trusted|cannot|could not|invalid|error|no matching).*
+    timeout: 30000
+    optional: true
+- runFlow:
+    when:
+      visible: .*(not trusted|cannot|could not|invalid|error|no matching).*
+    commands:
+      - evalScript: ${output.qa.answers['refused'] = 'yes'}
+      - evalScript: ${output.qa.answers['error-shown'] = 'yes'}
+      - evalScript: ${output.qa.answers['no-crash'] = 'no'}
+      - tapOn:
+          text: (OK|Close|Back|Cancel)
+          optional: true
+- runFlow:
+    when:
+      notVisible: (Share|Send data|Confirm)
+    commands:
+      - evalScript: ${output.qa.answers['no-data'] = 'no'}

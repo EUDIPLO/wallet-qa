@@ -1,0 +1,58 @@
+# Paradym (id.paradym.wallet), read from 1.23.0 on Android in German and English.
+# Share the requested data (OpenID4VP):
+#
+#   verifierUnverified ──trustYes──► reviewRequest ──share──► confirmPin ──PIN──►
+#   redirect to the Wallet QA page in the browser
+#
+# The texts are in strings.js (German: "Organisation nicht verifiziert", "Anfrage überprüfen",
+# ...).
+# verifier-shown: Paradym names no verifier it does not trust. For the Wallet QA access
+# certificate it shows verifierUnverified and "Unknown Organization", so the flow answers
+# "no". How Paradym shows a trusted verifier has not been seen yet, so that case is left to a
+# tester.
+appId: ${WALLET_APP_ID}
+---
+- runFlow: open-in-wallet.yaml
+- extendedWaitUntil:
+    visible: '(${output.t.trustYes}|${output.t.reviewRequest}|${output.t.error})'
+    timeout: 30000
+    optional: true
+- runFlow:
+    when:
+      notVisible: '(${output.t.trustYes}|${output.t.reviewRequest}|${output.t.error})'
+    commands:
+      - takeScreenshot: paradym-unknown-screen
+      - evalScript: "${(function () { throw new Error('Paradym shows no request screen this adapter knows (texts for ' + output.languages + ' in strings.js). Is Paradym in another language? See paradym-unknown-screen.png') })()}"
+- runFlow:
+    when:
+      visible: ${output.t.verifierUnverified}
+    commands:
+      - takeScreenshot: paradym-verifier-unverified
+      - evalScript: ${output.qa.answers['verifier-shown'] = 'no'}
+- runFlow:
+    when:
+      visible: ${output.t.trustYes}
+    commands:
+      - tapOn: ${output.t.trustYes}
+      - extendedWaitUntil:
+          visible: '(${output.t.reviewRequest}|${output.t.error})'
+          timeout: 30000
+- runFlow:
+    when:
+      visible: ${output.t.reviewRequest}
+    commands:
+      - takeScreenshot: paradym-request
+      - tapOn: ${output.t.share}
+      - extendedWaitUntil:
+          visible: '(${output.t.confirmPin}|${output.t.error})'
+          timeout: 30000
+- runFlow:
+    when:
+      visible: ${output.t.confirmPin}
+    file: enter-pin.yaml
+- runFlow:
+    when:
+      visible: ${output.t.error}
+    commands:
+      - takeScreenshot: paradym-presentation-error
+      - tapOn: ${output.t.toWallet}

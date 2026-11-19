@@ -1,0 +1,69 @@
+# Paradym (id.paradym.wallet), read from 1.23.0 on Android in German and English.
+# Accept a credential offer: trust the issuer, look at the offer, save the card.
+#
+#   trust issuer ──trustYes──► (fetching) ──► offered ──next──► storeCard ──accept──► success
+#
+# The texts are in strings.js (German: "Ja, fortfahren", "Karte angeboten", ...).
+# When Paradym rejects the issued credential it shows its error screen with the reason; the
+# flow then answers the checklist with "no" and leaves through toWallet.
+# Paradym asked for no PIN on accept.
+appId: ${WALLET_APP_ID}
+---
+- runFlow: open-in-wallet.yaml
+- extendedWaitUntil:
+    visible: '(${output.t.trustYes}|${output.t.offered}|${output.t.error})'
+    timeout: 30000
+    optional: true
+- runFlow:
+    when:
+      notVisible: '(${output.t.trustYes}|${output.t.offered}|${output.t.error})'
+    commands:
+      - takeScreenshot: paradym-unknown-screen
+      - evalScript: "${(function () { throw new Error('Paradym shows no offer screen this adapter knows (texts for ' + output.languages + ' in strings.js). Is Paradym in another language? See paradym-unknown-screen.png') })()}"
+- runFlow:
+    when:
+      visible: ${output.t.trustYes}
+    commands:
+      - takeScreenshot: paradym-issuer-trust
+      - tapOn: ${output.t.trustYes}
+      # Paradym fetches the credentials here, before it shows the card.
+      - extendedWaitUntil:
+          visible: '(${output.t.offered}|${output.t.error})'
+          timeout: 60000
+- runFlow:
+    when:
+      visible: ${output.t.offered}
+    commands:
+      - takeScreenshot: paradym-offer
+      - tapOn: ${output.t.next}
+      - extendedWaitUntil:
+          visible: ${output.t.storeCard}
+          timeout: 30000
+      # claims-shown: the card's claims are listed under their display names on this screen.
+      - takeScreenshot: paradym-claims
+      - evalScript: ${output.qa.answers['claims-shown'] = 'yes'}
+      - tapOn: ${output.t.accept}
+      - extendedWaitUntil:
+          visible: '(${output.t.success}|${output.t.error})'
+          timeout: 30000
+# card-shown: the success screen shows the stored card with its name. "Credential" is the
+# card's accessibility label, which Paradym does not translate.
+- runFlow:
+    when:
+      visible: ${output.t.success}
+    commands:
+      - takeScreenshot: paradym-card-stored
+      - runFlow:
+          when:
+            visible: 'Credential'
+          commands:
+            - evalScript: ${output.qa.answers['card-shown'] = 'yes'}
+      - tapOn: ${output.t.toWallet}
+- runFlow:
+    when:
+      visible: ${output.t.error}
+    commands:
+      - takeScreenshot: paradym-issuance-error
+      - evalScript: ${output.qa.answers['card-shown'] = 'no'}
+      - evalScript: ${output.qa.answers['claims-shown'] = 'no'}
+      - tapOn: ${output.t.toWallet}
