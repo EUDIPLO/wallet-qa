@@ -77,7 +77,7 @@ async function init() {
   }
   el('message').textContent = '';
   renderFeatures();
-  const wallets = [...new Set(data.results.map((r) => r.wallet.name))].sort();
+  const wallets = [...new Set(data.results.map((r) => r.wallet.name))].sort((a, b) => a.localeCompare(b));
   el('walletFilter').append(...wallets.map((name) => { const option = node('option', name); option.value = name; return option; }));
   el('walletFilter').onchange = render;
   render();
