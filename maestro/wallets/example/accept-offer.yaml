@@ -1,0 +1,39 @@
+# Accept a credential offer (OpenID4VCI). Example selectors: adjust them to your wallet.
+# Answers checklist questions it can see on screen through output.qa.answers.
+appId: ${WALLET_APP_ID}
+---
+# iOS asks before a link opens another app.
+- tapOn:
+    text: Open
+    optional: true
+- runFlow:
+    when:
+      true: ${output.qa.step.transactionCode != null}
+    commands:
+      - extendedWaitUntil:
+          visible: .*(code|PIN).*
+          timeout: 20000
+      - inputText: ${output.qa.step.transactionCode}
+      - tapOn: (Next|Continue|Confirm)
+- extendedWaitUntil:
+    visible: (Add|Accept)
+    timeout: 30000
+- tapOn: (Add|Accept)
+- runFlow:
+    when:
+      true: ${typeof WALLET_PIN !== 'undefined'}
+    commands:
+      - extendedWaitUntil:
+          visible: .*PIN.*
+          timeout: 15000
+      - inputText: ${WALLET_PIN}
+# card-shown: the new credential appears in the wallet.
+- extendedWaitUntil:
+    visible: .*(added|saved|stored).*
+    timeout: 30000
+    optional: true
+- runFlow:
+    when:
+      visible: .*(added|saved|stored).*
+    commands:
+      - evalScript: ${output.qa.answers['card-shown'] = 'yes'}

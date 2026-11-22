@@ -1,0 +1,73 @@
+# Opens the link in Paradym and unlocks it. Loads Paradym's screen texts (strings.js) for the
+# adapter flows, which run this first.
+#
+# Android asks which app opens the link when several wallets handle openid-credential-offer://
+# or openid4vp://. The chooser and the face unlock prompt are Android's own, so they are
+# matched by resource id, in any language. The flow picks Paradym for this link only, never
+# as the default.
+appId: ${WALLET_APP_ID}
+---
+- runScript: strings.js
+- extendedWaitUntil:
+    visible:
+      id: android:id/resolver_list
+    timeout: 5000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        # "Open with Paradym Wallet": Paradym is preselected.
+        id: android:id/title
+        text: .*Paradym Wallet.*
+    commands:
+      - tapOn:
+          id: android:id/button_once
+      - extendedWaitUntil:
+          notVisible:
+            id: android:id/resolver_list
+          timeout: 5000
+- runFlow:
+    when:
+      visible:
+        id: android:id/resolver_list
+      notVisible:
+        id: android:id/title
+        text: .*Paradym Wallet.*
+    commands:
+      # Another wallet is preselected; Paradym is in the list below it.
+      - scrollUntilVisible:
+          element:
+            id: android:id/text1
+            text: Paradym Wallet
+      - tapOn:
+          id: android:id/text1
+          text: Paradym Wallet
+      - runFlow:
+          when:
+            visible:
+              id: android:id/button_once
+          commands:
+            - tapOn:
+                id: android:id/button_once
+# Paradym unlocks with face or fingerprint when the phone has one. Cancel it to get the app
+# PIN pad, which enter-pin.yaml can fill.
+- extendedWaitUntil:
+    visible:
+      id: com.android.systemui:id/biometric_icon
+    timeout: 3000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: com.android.systemui:id/close_button
+    commands:
+      - tapOn:
+          id: com.android.systemui:id/close_button
+- extendedWaitUntil:
+    visible: '(${output.t.unlockPin}|${output.t.trustYes}|${output.t.offered}|${output.t.reviewRequest}|${output.t.error})'
+    timeout: 15000
+    optional: true
+- runFlow:
+    when:
+      visible: ${output.t.unlockPin}
+    file: enter-pin.yaml

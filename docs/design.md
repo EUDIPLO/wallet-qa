@@ -3,7 +3,8 @@
 Wallet QA is a manual test bench for EUDI wallets. A tester picks a test, starts it, completes
 it with a real wallet on a phone, and gets a verdict. EUDIPLO plays issuer and verifier; Wallet
 QA decides from what EUDIPLO recorded and what the tester saw. Automated flows (Maestro,
-Appium, XCUITest, Espresso) can drive the same page and API later.
+Appium, XCUITest, Espresso) can drive the same page and API; a Maestro proof of concept is
+in [maestro/](../maestro/README.md).
 
 This document explains the test catalog, the EUDIPLO configuration, the evaluation logic and
 the workspace model. How to run and deploy it is in the [README](../README.md),

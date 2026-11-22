@@ -1,0 +1,38 @@
+# Runs one Wallet QA test with this wallet. Copy the folder for another wallet and change the
+# three adapter flows next to this file; this loop stays the same.
+#
+#   maestro test -e SCENARIO=P-PID-ALL-SDJWT -e QA_URL=... maestro/wallets/example/test.yaml
+appId: ${WALLET_APP_ID}
+name: Wallet QA ${SCENARIO}
+---
+- runScript:
+    file: ../../scripts/wallet-qa.js
+    env:
+      ACTION: start
+# One pass per step that waits for the wallet (issuance first, then presentation, ...).
+- repeat:
+    while:
+      true: ${output.qa.step != null}
+    commands:
+      # Same-device: open the offer or request link instead of scanning a QR code.
+      - openLink: ${output.qa.step.uri}
+      - runFlow:
+          when:
+            true: ${output.qa.step.kind == 'issuance'}
+          file: accept-offer.yaml
+      - runFlow:
+          when:
+            true: ${output.qa.step.kind != 'issuance' && output.qa.step.expected == 'completed'}
+          file: share.yaml
+      - runFlow:
+          when:
+            true: ${output.qa.step.kind != 'issuance' && output.qa.step.expected != 'completed'}
+          file: refuse.yaml
+      - runScript:
+          file: ../../scripts/wallet-qa.js
+          env:
+            ACTION: step
+- runScript:
+    file: ../../scripts/wallet-qa.js
+    env:
+      ACTION: finish

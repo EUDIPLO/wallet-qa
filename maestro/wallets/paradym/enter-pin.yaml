@@ -1,0 +1,23 @@
+# Paradym's app PIN, on its own number pad (output.t.unlockPin to unlock the app,
+# output.t.confirmPin to confirm a presentation). The digit keys are matched by their digit,
+# which is the same in every language.
+# With WALLET_PIN set, taps its digits. Without it, waits up to two minutes for a person to
+# enter the PIN on the phone.
+appId: ${WALLET_APP_ID}
+---
+- runFlow:
+    when:
+      true: ${typeof WALLET_PIN !== 'undefined'}
+    commands:
+      - evalScript: "${output.pin = { digits: String(WALLET_PIN).split(''), next: 0 }}"
+      - repeat:
+          while:
+            true: ${output.pin.next < output.pin.digits.length}
+          commands:
+            - tapOn:
+                text: ${output.pin.digits[output.pin.next]}
+                index: 0
+            - evalScript: ${output.pin.next = output.pin.next + 1}
+- extendedWaitUntil:
+    notVisible: '(${output.t.unlockPin}|${output.t.confirmPin})'
+    timeout: 120000
