@@ -76,6 +76,8 @@ export function createApp(
     published?: PublishedStore;
     /** Bearer token that may remove published results; without it removal is off. */
     adminToken?: string;
+    /** The built Angular preview (dist/web/browser), served under /next/; without it /next answers 404. */
+    webDir?: string;
   },
 ) {
   const published = () => {
@@ -362,6 +364,15 @@ export function createApp(
       run ? `/w/${encodeURIComponent(run.owner)}?run=${run.id}` : '/',
     );
   });
+  // The Angular Material preview of the page (web/, issue #11). Its routes are client-side, so
+  // /next/w/<workspace> answers with its index.html.
+  const webDir = options.webDir;
+  if (webDir) {
+    app.use('/next', express.static(webDir, { index: false }));
+    app.get(['/next', '/next/w/:ws'], (_req, res) =>
+      res.sendFile(path.join(webDir, 'index.html')),
+    );
+  }
   app.get('/results', (_req, res) =>
     res.sendFile(path.join(options.publicDir, 'results.html')),
   );

@@ -191,6 +191,32 @@ The page has a stable contract so Maestro, XCUITest or Espresso can drive it: vi
 The [Maestro flows](maestro/README.md) use the API instead of the page: they start a run,
 open its same-device link in the wallet, and wait for the verdict.
 
+**Preview (Angular Material).** `/next/w/<workspace>` is a rebuild of the workspace screen
+(test picker, Start run, live run) in Angular Material with the EUDIPLO client's Material 3
+theme ([issue #11](https://github.com/EUDIPLO/wallet-qa/issues/11)). It keeps the contract above,
+takes the same `?scenario=`, `?run=` and `?timeoutSeconds=` parameters, and adds:
+
+- Test hooks: every element a flow taps or reads has an `id` and a `data-testid` with the same
+  value. Chrome on Android exposes the `id` to Maestro and UiAutomator, `data-testid` to
+  WebDriver and Playwright. `#liveRun` keeps its id (hook `live-run`).
+
+  | Hook | Element |
+  | --- | --- |
+  | `scenario-select` | Test picker (a native `<select>`) |
+  | `start-run` | Start run |
+  | `verdict` | `Status: …` / `Verdict: …` |
+  | `open-wallet`, `tx-code`, `qr`, `wallet-uri` | Open wallet, `Transaction code: …`, QR code, link |
+  | `run-id`, `scenario-id`, `reason`, `step`, `instruction` | Run details |
+  | `checklist-q-<id>`, `checklist-q-<id>-yes`, `-no`, `-note`, `save-answers` | Checklist |
+  | `control-<id>` | Run controls (revoke, suspend) |
+  | `evidence`, `audit`, `cancel-run`, `message` | Evidence, audit JSON, cancel, status message |
+
+- `?e2e=1` switches off Material animations and ripples, CSS transitions and the progress bar.
+
+The source is in `web/` (its own pnpm package: Angular 22 needs TypeScript 6.0 and Node.js
+22.22.3 or later). `pnpm run build` builds it into `dist/web`; the server serves it when that
+folder exists. [`maestro/web/live-run.yaml`](maestro/web/live-run.yaml) drives it.
+
 ## Test trust
 
 `pnpm fixtures:generate <eudiplo-host> fixtures eudiplo-config` creates a
@@ -213,6 +239,7 @@ publicly trusted TLS certificate; see [docs/hosting.md](docs/hosting.md).
 pnpm install
 pnpm run build && pnpm test       # unit tests use a fake EUDIPLO backend
 pnpm dev                          # http://127.0.0.1:8787 (EUDIPLO via Compose)
+pnpm dev:spa                      # rebuilds the /next/ preview (web/) on change
 pnpm smoke                        # creates and deletes one EUDIPLO session per test step
 ```
 

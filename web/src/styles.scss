@@ -1,0 +1,43 @@
+@use '@angular/material' as mat;
+@use 'styles/theme-colors';
+
+// EUDIPLO's Material 3 theme (palettes from styles/_theme-colors.scss, Roboto, density 0). The
+// colour scheme follows the device: theme-type color-scheme emits light-dark() values.
+html {
+  color-scheme: light dark;
+  @include mat.theme(
+    (
+      color: (
+        primary: theme-colors.$primary-palette,
+        tertiary: theme-colors.$tertiary-palette,
+        theme-type: color-scheme,
+      ),
+      typography: Roboto,
+      density: 0,
+    )
+  );
+
+  // Status colours, as in the EUDIPLO client (light and dark values).
+  --qa-success: light-dark(#2e7d32, #81c784);
+  --qa-danger: light-dark(#c62828, #ef9a9a);
+  --qa-success-soft: color-mix(in srgb, var(--qa-success) 14%, transparent);
+  --qa-danger-soft: color-mix(in srgb, var(--qa-danger) 14%, transparent);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  background-color: var(--mat-sys-surface-container-lowest);
+  color: var(--mat-sys-on-surface);
+  -webkit-text-size-adjust: 100%;
+}
+
+// ?e2e=1: nothing moves under a test runner's tap.
+html.e2e *,
+html.e2e *::before,
+html.e2e *::after {
+  transition: none !important;
+  animation: none !important;
+  scroll-behavior: auto !important;
+}
