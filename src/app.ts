@@ -365,12 +365,15 @@ export function createApp(
     );
   });
   // The Angular Material preview of the page (web/, issue #11). Its routes are client-side, so
-  // /next/w/<workspace> answers with its index.html.
+  // every /next path that is not a file (/next/w/<workspace>, /next/w/) answers with its
+  // index.html; a missing script or stylesheet stays a 404.
   const webDir = options.webDir;
   if (webDir) {
     app.use('/next', express.static(webDir, { index: false }));
-    app.get(['/next', '/next/w/:ws'], (_req, res) =>
-      res.sendFile(path.join(webDir, 'index.html')),
+    app.get('/next{/*rest}', (req, res, next) =>
+      path.extname(req.path)
+        ? next()
+        : res.sendFile(path.join(webDir, 'index.html')),
     );
   }
   app.get('/results', (_req, res) =>

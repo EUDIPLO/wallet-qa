@@ -149,7 +149,7 @@ test('HTTP: /next serves the built preview and falls back to its index.html', as
   const withWeb = await listen(createApp(engine, { publicDir: path.resolve('public'), publicOrigin: 'http://localhost', webDir }));
   const without = await listen(createApp(engine, { publicDir: path.resolve('public'), publicOrigin: 'http://localhost' }));
   try {
-    for (const route of ['/next', '/next/', `/next/w/${WS}?scenario=I-EAA-NOTX&e2e=1`]) {
+    for (const route of ['/next', '/next/', '/next/w/', '/next/unknown/page', `/next/w/${WS}?scenario=I-EAA-NOTX&e2e=1`]) {
       const response = await fetch(withWeb.base + route);
       assert.equal(response.status, 200, route);
       assert.equal(await response.text(), '<qa-root></qa-root>', route);
