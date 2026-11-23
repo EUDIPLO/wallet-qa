@@ -1,5 +1,5 @@
-// The Angular preview (web/): its page-contract texts and attributes, checked against real run
-// views from the engine, and how Express serves it under /next/.
+// The page (web/): its page-contract texts and attributes, checked against real run views from
+// the engine, the texts and lists of its screens, and how Express serves it.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
@@ -24,7 +24,22 @@ import {
   verdictTone,
   walletLink,
   type LiveRun,
-} from '../web/src/app/live-run/run-view.js';
+} from '../web/src/app/model/run-view.js';
+import {
+  catalogSections,
+  certificateText,
+  instanceRootText,
+  instanceSummary,
+  progressText,
+  publishErrorText,
+  publishedText,
+  statusText,
+  tagsOf,
+  workspaceBody,
+  workspaceIdFrom,
+  workspaceSummary,
+  type Scenario,
+} from '../web/src/app/model/workspace-view.js';
 import { testWorkspaces, WS } from './helpers.js';
 
 class FakeBackend implements Backend {
@@ -56,7 +71,7 @@ async function setup() {
 /** The run view the page gets from GET /v1/runs/:id. */
 const view = (run: Parameters<typeof liveRun>[0]) => JSON.parse(JSON.stringify(liveRun(run))) as LiveRun;
 
-test('preview: a running issuance shows its status, transaction code and an Open wallet link', async () => {
+test('page: a running issuance shows its status, transaction code and an Open wallet link', async () => {
   const { engine, store } = await setup();
   const { run } = await engine.create({ workspaceId: WS, scenarioId: 'I-EAA-TX' });
   const live = view((await store.get(run.id))!);
@@ -73,7 +88,7 @@ test('preview: a running issuance shows its status, transaction code and an Open
   assert.equal(verdictTone(live), 'neutral');
 });
 
-test('preview: after the wallet, the checklist and then the verdict; no wallet link', async () => {
+test('page: after the wallet, the checklist and then the verdict; no wallet link', async () => {
   const { engine, store, backend } = await setup();
   const { run } = await engine.create({ workspaceId: WS, scenarioId: 'I-EAA-NOTX' });
   backend.sessions.set((await store.get(run.id))!.steps[0].sessionId!, { status: 'completed' });
@@ -94,7 +109,7 @@ test('preview: after the wallet, the checklist and then the verdict; no wallet l
   assert.equal(contractAttributes(live, 'fresh').verdict, live.verdict);
 });
 
-test('preview: texts and attributes without a run, and for attested and failed runs', () => {
+test('page: texts and attributes without a run, and for attested and failed runs', () => {
   assert.equal(badgeText(undefined), 'Verdict: none');
   assert.deepEqual(contractAttributes(undefined, 'idle'), {
     runId: '', completed: 'false', passed: 'pending', verdict: 'pending', attested: 'false', sync: 'idle',
@@ -116,7 +131,7 @@ test('preview: texts and attributes without a run, and for attested and failed r
   assert.equal(reasonText({ ...tester, noEvidence: 'EUDIPLO has no evidence' }), 'EUDIPLO has no evidence. Answer the checklist to finish the run.');
 });
 
-test('preview: Open wallet only navigates to wallet hand-off schemes', () => {
+test('page: Open wallet only navigates to wallet hand-off schemes', () => {
   const run = (uri: string) => ({
     id: 'r1', scenarioId: 'P-X', scenarioLabel: 'X', state: 'awaiting_wallet', completed: false, passed: null,
     verdict: null, attested: null, reason: null, awaitingTester: false, noEvidence: null,
@@ -129,14 +144,71 @@ test('preview: Open wallet only navigates to wallet hand-off schemes', () => {
     assert.equal(walletLink(run(uri)), undefined, uri);
 });
 
-test('preview: only answered checklist items are sent, without empty notes', () => {
+test('page: only answered checklist items are sent, without empty notes', () => {
   assert.deepEqual(answersToSend({ a: { answer: 'yes', note: '' }, b: { note: 'only a note' }, c: { answer: 'no', note: 'seen' } }), {
     a: { answer: 'yes' },
     c: { answer: 'no', note: 'seen' },
   });
 });
 
-test('HTTP: /next serves the built preview and falls back to its index.html', async () => {
+test('page: the setup form sends only filled fields and finds workspace IDs in links', () => {
+  assert.deepEqual(workspaceBody({ tester: ' ', name: ' EUDI Wallet ', version: '1.4.2', platform: 'android', device: '' }), {
+    wallet: { name: 'EUDI Wallet', version: '1.4.2', platform: 'android' },
+  });
+  assert.deepEqual(workspaceBody({ tester: 'Alice', name: 'W', version: '', platform: '', device: '' }), { tester: 'Alice', wallet: { name: 'W' } });
+  assert.equal(workspaceIdFrom(`https://qa.test/w/${WS}/`), WS);
+  assert.equal(workspaceIdFrom(` ${WS} `), WS);
+  assert.equal(workspaceIdFrom('https://qa.test/w/short'), undefined);
+  assert.equal(
+    workspaceSummary({ id: WS, tester: 'Alice', wallet: { name: 'EUDI Wallet', version: '1.4.2', platform: 'android', device: 'Pixel 8' } }),
+    'Alice · EUDI Wallet 1.4.2 · android · Pixel 8',
+  );
+});
+
+test('page: the catalog groups by section, filters, and shows the latest status of each test', () => {
+  const scenario = (id: string, section: string, tags: string[], availability = 'ready'): Scenario => ({
+    id, section, label: `Label ${id}`, description: '', profile: 'p', tags, prerequisites: [], availability,
+  });
+  const scenarios = [scenario('I-A', 'Issuance', ['eaa']), scenario('P-B', 'Presentation', ['pid']), scenario('R-OFF', 'Rejection', [], 'unsupported')];
+  const run = (scenarioId: string, extra: Partial<LiveRun>) => ({ id: scenarioId, scenarioId, completed: true, verdict: 'passed', attested: false, awaitingTester: false, ...extra }) as LiveRun;
+  const runs = [run('I-A', { attested: true }), run('P-B', { completed: false, verdict: null, awaitingTester: true })];
+  const all = catalogSections(scenarios, runs, '', '');
+  assert.deepEqual(all.map((s) => s.name), ['Issuance', 'Presentation', 'Rejection']);
+  assert.deepEqual(all.flatMap((s) => s.items.map((i) => `${i.scenario.id}:${i.status}:${i.tone}`)), [
+    'I-A:passed (attested):passed', 'P-B:answer checklist:running', 'R-OFF:unsupported:neutral',
+  ]);
+  assert.deepEqual(catalogSections(scenarios, runs, 'label p-b', '').flatMap((s) => s.items.map((i) => i.scenario.id)), ['P-B']);
+  assert.deepEqual(catalogSections(scenarios, runs, '', 'eaa').flatMap((s) => s.items.map((i) => i.scenario.id)), ['I-A']);
+  assert.deepEqual(tagsOf(scenarios), ['eaa', 'pid']);
+  assert.equal(progressText(scenarios, runs), '1 of 2 run');
+  assert.equal(statusText(undefined), 'not run');
+  assert.equal(statusText(run('X', { verdict: 'failed' })), 'failed');
+  assert.equal(statusText(run('X', { completed: false, verdict: null })), 'running');
+});
+
+test('page: the instance trust setup and the publish messages', () => {
+  const environment = {
+    trust: { sha256: 'AB:CD', rootCertificateDer: 'wallet-qa-test-root.der' },
+    tenants: [
+      { tenantId: 'base', profileIds: ['default'], description: 'Main verifier', accessCertificate: { source: 'other', issuer: 'Registrar CA', validTo: '2027-01-01T00:00:00.000Z' } },
+      { tenantId: 'issuer-dpop-v1', profileIds: ['dpop-v1'], accessCertificate: null },
+    ],
+  };
+  assert.equal(instanceSummary(environment), 'This instance: 2 EUDIPLO tenants · wallet must trust Registrar CA');
+  assert.equal(certificateText(environment.tenants[0]), 'access certificate issued by Registrar CA (valid until 2027-01-01)');
+  assert.equal(certificateText(environment.tenants[1]), 'no access certificate (issuer only)');
+  assert.equal(certificateText({ ...environment.tenants[1], error: 'expired' }), 'trust check failed: expired');
+  assert.equal(certificateText({ ...environment.tenants[0], accessCertificate: { source: 'test-root', issuer: 'x', validTo: '2030-05-01' } }), 'access certificate from the Wallet QA test root (valid until 2030-05-01)');
+  assert.match(instanceRootText(environment), /SHA-256 AB:CD — \/trust\/wallet-qa-test-root\.der/);
+  assert.equal(instanceSummary({ tenants: [{ tenantId: 'a', profileIds: [], accessCertificate: null }] }), 'This instance: 1 EUDIPLO tenant');
+  assert.equal(publishedText(2), 'Published 2 test results to /results.');
+  assert.equal(publishedText(1, true), 'Published 1 self-reported test result to /results.');
+  // The server answers a body that is not JSON with 400 "Invalid JSON body" (tests/published.test.ts).
+  assert.equal(publishErrorText(400, 'Invalid JSON body'), 'Could not publish: the file is not JSON');
+  assert.equal(publishErrorText(409, 'Already published'), 'Could not publish: Already published');
+});
+
+test('HTTP: the page is served at / and /w/<workspace>; results, trust and the API stay', async () => {
   const { engine } = await setup();
   const webDir = await mkdtemp(path.join(os.tmpdir(), 'wallet-qa-web-'));
   await writeFile(path.join(webDir, 'index.html'), '<qa-root></qa-root>');
@@ -149,17 +221,21 @@ test('HTTP: /next serves the built preview and falls back to its index.html', as
   const withWeb = await listen(createApp(engine, { publicDir: path.resolve('public'), publicOrigin: 'http://localhost', webDir }));
   const without = await listen(createApp(engine, { publicDir: path.resolve('public'), publicOrigin: 'http://localhost' }));
   try {
-    for (const route of ['/next', '/next/', '/next/w/', '/next/unknown/page', `/next/w/${WS}?scenario=I-EAA-NOTX&e2e=1`]) {
+    for (const route of ['/', `/w/${WS}`, `/w/${WS}?scenario=I-EAA-NOTX&e2e=1`]) {
       const response = await fetch(withWeb.base + route);
       assert.equal(response.status, 200, route);
       assert.equal(await response.text(), '<qa-root></qa-root>', route);
     }
-    assert.match(await (await fetch(`${withWeb.base}/next/main-ABC.js`)).text(), /console/);
-    assert.equal((await fetch(`${withWeb.base}/next/missing.js`)).status, 404);
-    // The classic page and the API stay where they are.
-    assert.match(await (await fetch(`${withWeb.base}/w/${WS}`)).text(), /<title>Wallet QA<\/title>/);
+    assert.match(await (await fetch(`${withWeb.base}/main-ABC.js`)).text(), /console/);
+    assert.equal((await fetch(`${withWeb.base}/missing.js`)).status, 404);
+    assert.match(await (await fetch(`${withWeb.base}/results`)).text(), /<title>Wallet QA results<\/title>/);
+    assert.equal((await fetch(`${withWeb.base}/results.js`)).status, 200);
+    assert.equal((await fetch(`${withWeb.base}/trust/trust.json`)).status, 200);
     assert.equal((await fetch(`${withWeb.base}/v1/scenarios`)).status, 200);
-    assert.equal((await fetch(`${without.base}/next/w/${WS}`)).status, 404);
+    // Without a build the page says so instead of serving an empty page.
+    const missing = await fetch(`${without.base}/w/${WS}`);
+    assert.equal(missing.status, 503);
+    assert.match((await missing.json()).error.message, /pnpm build/);
   } finally {
     await withWeb.close();
     await without.close();

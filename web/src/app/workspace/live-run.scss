@@ -1,7 +1,7 @@
 @use '@angular/material' as mat;
 
-// Mobile first: one column, touch targets of at least 48 px, the wallet hand-off at the top of
-// the live run so Open wallet, the transaction code and the QR code fit on a phone screen.
+// Touch targets of at least 48 px; the wallet hand-off comes first in the live run so Open
+// wallet, the transaction code and the QR code fit on a phone screen.
 :host {
   display: flex;
   flex-direction: column;
@@ -32,23 +32,7 @@ p {
   margin: 0 0 8px;
 }
 
-.message:empty {
-  display: none;
-}
 
-.message {
-  margin: 0;
-  padding: 12px 16px;
-  border-radius: var(--mat-sys-corner-medium);
-  background: var(--mat-sys-secondary-container);
-  color: var(--mat-sys-on-secondary-container);
-}
-
-.workspace {
-  margin: 0;
-  font: var(--mat-sys-body-medium);
-  color: var(--mat-sys-on-surface-variant);
-}
 
 .muted {
   color: var(--mat-sys-on-surface-variant);
@@ -78,10 +62,6 @@ p {
   }
 }
 
-.test-label {
-  margin: 16px 0 4px;
-  font: var(--mat-sys-title-large);
-}
 
 // The app bar is sticky; keep the live run's header below it when scrolled into view.
 #liveRun {

@@ -182,40 +182,46 @@ step definitions and the tags `dpop`, `wallet-attestation`, `dc-api`, `annex-c`,
 
 ### Page contract for UI automation
 
-The page has a stable contract so Maestro, XCUITest or Espresso can drive it: visible
-`Start run`, `Open wallet`, `Run ID: <uuid>`, `Transaction code: <digits>`,
-`Status: …` / `Verdict: …`, and on `#liveRun` the attributes `data-run-id`,
-`data-completed`, `data-passed`, `data-verdict`, `data-attested`, `data-sync`. Open
-`/w/<workspace>?scenario=<id>` to preselect a test, `?run=<id>` to show a run.
+The page is an Angular app with Angular Material and the EUDIPLO client's Material 3 theme
+(source in `web/`, [issue #11](https://github.com/EUDIPLO/wallet-qa/issues/11)). It has a
+stable contract so Maestro, XCUITest, Espresso or Playwright can drive it:
 
-The [Maestro flows](maestro/README.md) use the API instead of the page: they start a run,
-open its same-device link in the wallet, and wait for the verdict.
-
-**Preview (Angular Material).** `/next/w/<workspace>` is a rebuild of the workspace screen
-(test picker, Start run, live run) in Angular Material with the EUDIPLO client's Material 3
-theme ([issue #11](https://github.com/EUDIPLO/wallet-qa/issues/11)). It keeps the contract above,
-takes the same `?scenario=`, `?run=` and `?timeoutSeconds=` parameters, and adds:
-
+- Visible texts: `Start run`, `Open wallet`, `Run ID: <uuid>`, `Transaction code: <digits>`,
+  `Status: …` / `Verdict: …`.
+- On `#liveRun` the attributes `data-run-id`, `data-completed`, `data-passed`, `data-verdict`,
+  `data-attested`, `data-sync`.
+- Links: `/w/<workspace>?scenario=<id>` preselects a test, `?run=<id>` shows a run,
+  `?timeoutSeconds=<n>` sets the run timeout.
+- `?e2e=1` switches off Material animations and ripples, CSS transitions and the progress bar.
 - Test hooks: every element a flow taps or reads has an `id` and a `data-testid` with the same
   value. Chrome on Android exposes the `id` to Maestro and UiAutomator, `data-testid` to
   WebDriver and Playwright. `#liveRun` keeps its id (hook `live-run`).
 
   | Hook | Element |
   | --- | --- |
-  | `scenario-select` | Test picker (a native `<select>`) |
-  | `start-run` | Start run |
+  | `workspace-form`, `tester`, `wallet-name`, `wallet-version`, `wallet-platform`, `wallet-device`, `save-workspace` | Create or edit a workspace (platform is a native `<select>`) |
+  | `join-input`, `join-button`, `resume-workspace` | Join a workspace, continue the last one |
+  | `upload-file`, `choose-file`, `upload-button` | Publish a report from another instance |
+  | `edit-workspace`, `join-toggle`, `join-link`, `join-qr` | Workspace bar, join on another device |
+  | `search`, `tag-filter`, `test-<test id>`, `progress` | Catalog (the tag filter is a native `<select>`) |
+  | `test-label`, `test-id`, `test-description`, `start-run` | Selected test, Start run |
   | `verdict` | `Status: …` / `Verdict: …` |
   | `open-wallet`, `tx-code`, `qr`, `wallet-uri` | Open wallet, `Transaction code: …`, QR code, link |
   | `run-id`, `scenario-id`, `reason`, `step`, `instruction` | Run details |
   | `checklist-q-<id>`, `checklist-q-<id>-yes`, `-no`, `-note`, `save-answers` | Checklist |
   | `control-<id>` | Run controls (revoke, suspend) |
-  | `evidence`, `audit`, `cancel-run`, `message` | Evidence, audit JSON, cancel, status message |
+  | `evidence`, `audit`, `cancel-run` | Evidence, audit JSON, cancel |
+  | `view-run-<run id>`, `report-junit`, `report-json`, `publish-results`, `confirm-ok`, `confirm-cancel` | Runs, reports, publishing |
+  | `message`, `instance-info` | Status message, this instance's trust setup |
 
-- `?e2e=1` switches off Material animations and ripples, CSS transitions and the progress bar.
+The [Maestro flows](maestro/README.md) use the API instead of the page: they start a run,
+open its same-device link in the wallet, and wait for the verdict.
+[`maestro/web/live-run.yaml`](maestro/web/live-run.yaml) drives the page itself.
 
-The source is in `web/` (its own pnpm package: Angular 22 needs TypeScript 6.0 and Node.js
-22.22.3 or later). `pnpm run build` builds it into `dist/web`; the server serves it when that
-folder exists. [`maestro/web/live-run.yaml`](maestro/web/live-run.yaml) drives it.
+`web/` is its own pnpm package: Angular 22 needs TypeScript 6.0 (the server uses 7) and
+Node.js 22.22.3 or later. `pnpm run build` builds it into `dist/web`, which the server serves;
+without it, `/` answers 503. The public results page (`/results`) is still plain HTML in
+`public/`.
 
 ## Test trust
 
@@ -239,7 +245,7 @@ publicly trusted TLS certificate; see [docs/hosting.md](docs/hosting.md).
 pnpm install
 pnpm run build && pnpm test       # unit tests use a fake EUDIPLO backend
 pnpm dev                          # http://127.0.0.1:8787 (EUDIPLO via Compose)
-pnpm dev:spa                      # rebuilds the /next/ preview (web/) on change
+pnpm dev:spa                      # rebuilds the page (web/) on change; Node.js 22.22.3+
 pnpm smoke                        # creates and deletes one EUDIPLO session per test step
 ```
 

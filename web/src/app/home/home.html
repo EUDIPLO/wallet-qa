@@ -1,0 +1,56 @@
+<p id="message" class="message" role="status" data-testid="message">{{ message() }}</p>
+
+<mat-card appearance="outlined" class="card" id="setup" data-testid="setup">
+  <mat-card-header><h2 mat-card-title>Start a test session</h2></mat-card-header>
+  <mat-card-content>
+    <p class="muted">
+      A workspace groups your runs and the wallet build you test. Open its link on the phone and the laptop to see the
+      same runs on both.
+    </p>
+    <qa-workspace-form [value]="formValue" [busy]="busy()" (saved)="create($event)" />
+  </mat-card-content>
+</mat-card>
+
+<mat-card appearance="outlined" class="card" id="join-existing" data-testid="join-existing">
+  <mat-card-header><h2 mat-card-title>Join a workspace</h2></mat-card-header>
+  <mat-card-content>
+    <form class="inline" (submit)="$event.preventDefault(); join()">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
+        <mat-label>Workspace link or ID</mat-label>
+        <input matInput id="join-input" data-testid="join-input" placeholder="https://…/w/…" [value]="joinInput()" (input)="joinInput.set($any($event.target).value)" />
+      </mat-form-field>
+      <button matButton="outlined" type="submit" class="big" id="join-button" data-testid="join-button">Join</button>
+    </form>
+  </mat-card-content>
+  @if (lastWorkspace()) {
+    <mat-card-actions>
+      <button matButton="filled" type="button" class="big" id="resume-workspace" data-testid="resume-workspace" (click)="resume()">
+        Continue the last workspace
+      </button>
+    </mat-card-actions>
+  }
+</mat-card>
+
+<mat-card appearance="outlined" class="card" id="upload-report" data-testid="upload-report">
+  <mat-card-header><h2 mat-card-title>Publish a report from another instance</h2></mat-card-header>
+  <mat-card-content>
+    <p class="muted">
+      Upload a workspace JSON report (Reports → JSON) to the public <a href="/results">results page</a>. It is marked
+      self-reported. Only the wallet, build, platform, device, versions and verdicts are published.
+    </p>
+    <div class="inline">
+      <input #file type="file" accept="application/json,.json" id="upload-file" data-testid="upload-file" class="file" (change)="chooseFile($event)" />
+      <button matButton="outlined" type="button" class="big" id="choose-file" data-testid="choose-file" (click)="file.click()">
+        Choose file
+      </button>
+      <span class="muted file-name" id="upload-file-name" data-testid="upload-file-name">{{ uploadFile()?.name ?? 'No file chosen' }}</span>
+    </div>
+  </mat-card-content>
+  <mat-card-actions>
+    <button matButton="outlined" type="button" class="big" id="upload-button" data-testid="upload-button" (click)="upload()">
+      Publish as self-reported
+    </button>
+  </mat-card-actions>
+</mat-card>
+
+<qa-instance-info />

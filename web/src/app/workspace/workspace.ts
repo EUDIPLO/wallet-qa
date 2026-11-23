@@ -12,54 +12,46 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatExpansionModule } from '@angular/material/expansion';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { Api, ApiError, Scenario, Workspace, storage } from '../api';
+import { MatDialog } from '@angular/material/dialog';
+import { Router } from '@angular/router';
+import { Api, ApiError, LAST_WORKSPACE_KEY, activeRunKey, errorText, storage } from '../api';
 import { E2E } from '../e2e';
+import { LiveRun, RunControl, SyncState } from '../model/run-view';
 import {
-  ChecklistItem,
-  Draft,
-  LiveRun,
-  RunControl,
-  SyncState,
-  answersToSend,
-  awaitingWallet,
-  badgeText,
-  contractAttributes,
-  qrValue,
-  reasonText,
-  stepText,
-  transactionCodeText,
-  verdictTone,
-  walletLink,
-} from './run-view';
-
-const LAST_WORKSPACE_KEY = 'walletqa.lastWorkspace';
-const errorText = (error: unknown) => (error instanceof Error ? error.message : 'Request failed');
+  PUBLISH_WARNING,
+  Scenario,
+  Workspace,
+  WorkspaceFormValue,
+  publishErrorText,
+  publishedText,
+  runLine,
+  workspaceBody,
+  workspaceForm,
+  workspaceSummary,
+} from '../model/workspace-view';
+import { confirm } from '../shared/confirm-dialog';
+import { download } from '../shared/download';
+import { InstanceInfo } from '../shared/instance-info';
+import { WorkspaceForm } from '../shared/workspace-form';
+import { Catalog } from './catalog';
+import { Answers, LiveRunPanel } from './live-run';
 
 /**
- * The workspace screen of the preview: pick a test, start it, follow the live run.
- * Behaviour follows the classic page (public/app.js): same API calls, same polling, same stored
- * run, same page contract. Every element a UI test taps or reads has a data-testid.
+ * A workspace at /w/<id>: the catalog, the selected test, the live run, the runs, reports and
+ * publishing. ?scenario=<id> preselects a test, ?run=<id> shows a run, ?timeoutSeconds= sets the
+ * run timeout, ?e2e=1 switches off animations.
  */
 @Component({
-  selector: 'qa-live-run',
-  imports: [
-    MatButtonModule,
-    MatCardModule,
-    MatExpansionModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatProgressBarModule,
-  ],
-  templateUrl: './live-run.html',
-  styleUrl: './live-run.scss',
+  selector: 'qa-workspace',
+  imports: [MatButtonModule, MatCardModule, Catalog, LiveRunPanel, InstanceInfo, WorkspaceForm],
+  templateUrl: './workspace.html',
+  styleUrl: './workspace.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LiveRunPage implements OnInit {
+export class WorkspacePage implements OnInit {
   private readonly api = inject(Api);
+  private readonly dialog = inject(MatDialog);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly injector = inject(Injector);
   readonly e2e = inject(E2E);
@@ -73,69 +65,33 @@ export class LiveRunPage implements OnInit {
   readonly loading = signal(true);
   readonly workspace = signal<Workspace | undefined>(undefined);
   readonly scenarios = signal<Scenario[]>([]);
+  readonly runs = signal<LiveRun[]>([]);
   readonly selectedId = signal('');
   readonly live = signal<LiveRun | undefined>(undefined);
   readonly sync = signal<SyncState>('idle');
   readonly emptyVerdict = signal('pending');
   readonly message = signal('');
+  readonly editing = signal(false);
+  readonly showJoin = signal(false);
+  readonly busy = signal(false);
   readonly starting = signal(false);
   readonly saving = signal(false);
   readonly pendingControls = signal<ReadonlySet<string>>(new Set());
-  /** Unsaved checklist answers per run. */
-  readonly drafts = signal<Record<string, Draft>>({});
 
   readonly selected = computed(() => this.scenarios().find((s) => s.id === this.selectedId()));
-  readonly sections = computed(() => {
-    const sections = new Map<string, Scenario[]>();
-    for (const scenario of this.scenarios())
-      sections.set(scenario.section, [...(sections.get(scenario.section) ?? []), scenario]);
-    return [...sections].map(([name, items]) => ({ name, items }));
-  });
-  readonly workspaceSummary = computed(() => {
+  readonly summary = computed(() => {
     const workspace = this.workspace();
-    if (!workspace) return '';
-    const { wallet } = workspace;
-    return [workspace.tester, [wallet.name, wallet.version].filter(Boolean).join(' '), wallet.platform, wallet.device]
-      .filter(Boolean)
-      .join(' · ');
+    return workspace ? workspaceSummary(workspace) : '';
   });
-  readonly contract = computed(() => contractAttributes(this.live(), this.sync(), this.emptyVerdict()));
-  readonly badge = computed(() => badgeText(this.live()));
-  readonly tone = computed(() => verdictTone(this.live()));
-  readonly awaiting = computed(() => {
-    const run = this.live();
-    return !!run && awaitingWallet(run);
-  });
-  readonly walletUri = computed(() => {
-    const run = this.live();
-    return run ? walletLink(run) : undefined;
-  });
-  readonly qrSrc = computed(() => {
-    const run = this.live();
-    const value = run && qrValue(run);
-    return value ? `/api/qr-code?value=${encodeURIComponent(value)}` : '';
-  });
-  readonly reason = computed(() => {
-    const run = this.live();
-    return run ? reasonText(run) : '';
-  });
-  readonly step = computed(() => {
-    const run = this.live();
-    return run ? stepText(run) : '';
-  });
-  readonly instruction = computed(() => (this.awaiting() ? (this.live()!.currentStep.instruction ?? '') : ''));
-  readonly txCode = computed(() => {
-    const run = this.live();
-    return run ? transactionCodeText(run) : '';
-  });
+  readonly formValue = computed(() => workspaceForm(this.workspace()));
+  readonly joinLink = computed(() => `${window.location.origin}/w/${this.workspaceId()}`);
+  readonly joinQr = computed(() => `/api/qr-code?value=${encodeURIComponent(this.joinLink())}`);
+  readonly runLine = runLine;
 
   private activeRunId?: string;
   private refreshing = false;
   private knownRunIds?: Set<string>;
 
-  private get activeRunKey() {
-    return `walletqa.activeRun.${this.workspaceId()}`;
-  }
   private get ws() {
     return encodeURIComponent(this.workspaceId());
   }
@@ -173,13 +129,12 @@ export class LiveRunPage implements OnInit {
       this.workspace.set(workspace);
       this.scenarios.set(scenarios);
     } catch (error) {
-      this.message.set(
-        error instanceof ApiError && error.status === 404
-          ? 'This workspace does not exist or has expired. Create a new one on the main page.'
-          : `Could not load: ${errorText(error)}`,
-      );
       storage.remove(LAST_WORKSPACE_KEY);
-      this.loading.set(false);
+      const text =
+        error instanceof ApiError && error.status === 404
+          ? 'This workspace does not exist or has expired. Create a new one.'
+          : `Could not load: ${errorText(error)}`;
+      await this.router.navigate(['/'], { queryParamsHandling: 'preserve', state: { message: text } });
       return;
     }
     storage.set(LAST_WORKSPACE_KEY, this.workspaceId());
@@ -190,16 +145,40 @@ export class LiveRunPage implements OnInit {
     this.selectedId.set(preset?.id ?? '');
     this.loading.set(false);
     await this.loadRuns().catch(() => undefined);
-    this.activeRunId = this.run() ?? storage.get(this.activeRunKey) ?? undefined;
+    this.activeRunId = this.run() ?? storage.get(activeRunKey(this.workspaceId())) ?? undefined;
     if (this.activeRunId) await this.refreshActiveRun();
     // Back from the wallet (?run=): show the result.
-    if (this.run() && this.live()) this.revealLiveRun();
+    if (this.run() && this.live()) this.reveal('liveRun');
+  }
+
+  /** Scrolls an element to the top; on a phone the catalog is below the test and the live run. */
+  private reveal(id: string) {
+    afterNextRender(
+      () => document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: this.e2e ? 'instant' : 'smooth' }),
+      { injector: this.injector },
+    );
   }
 
   choose(id: string) {
     this.selectedId.set(id);
+    this.reveal('test-detail');
   }
 
+  // ------------------------------------------------------------------ workspace
+  async saveWorkspace(form: WorkspaceFormValue) {
+    this.busy.set(true);
+    try {
+      this.workspace.set(await this.api.patch<Workspace>(`/workspaces/${this.ws}`, workspaceBody(form)));
+      this.editing.set(false);
+      this.message.set('');
+    } catch (error) {
+      this.message.set(errorText(error));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  // ------------------------------------------------------------------ runs
   async start() {
     const scenario = this.selected();
     if (!scenario || scenario.availability !== 'ready') return;
@@ -210,7 +189,7 @@ export class LiveRunPage implements OnInit {
     try {
       this.selectRun(await this.api.post<LiveRun>(`/workspaces/${this.ws}/runs`, body));
       this.message.set('');
-      this.revealLiveRun();
+      this.reveal('liveRun');
       await this.loadRuns();
     } catch (error) {
       this.message.set(errorText(error));
@@ -219,18 +198,16 @@ export class LiveRunPage implements OnInit {
     }
   }
 
-  private selectRun(run: LiveRun) {
-    this.activeRunId = run.id;
-    storage.set(this.activeRunKey, run.id);
-    this.show(run);
+  view(run: LiveRun) {
+    this.selectRun(run);
+    this.reveal('liveRun');
+    void this.refreshActiveRun();
   }
 
-  /** Scrolls the live run to the top, so Open wallet, transaction code and QR code are on screen. */
-  private revealLiveRun() {
-    afterNextRender(
-      () => document.getElementById('liveRun')?.scrollIntoView({ block: 'start', behavior: this.e2e ? 'instant' : 'smooth' }),
-      { injector: this.injector },
-    );
+  private selectRun(run: LiveRun) {
+    this.activeRunId = run.id;
+    storage.set(activeRunKey(this.workspaceId()), run.id);
+    this.show(run);
   }
 
   private show(run: LiveRun) {
@@ -240,7 +217,7 @@ export class LiveRunPage implements OnInit {
 
   private clearRun(verdict: string) {
     this.activeRunId = undefined;
-    storage.remove(this.activeRunKey);
+    storage.remove(activeRunKey(this.workspaceId()));
     this.live.set(undefined);
     this.emptyVerdict.set(verdict);
   }
@@ -272,20 +249,20 @@ export class LiveRunPage implements OnInit {
    */
   private async loadRuns() {
     const { runs } = await this.api.get<{ runs: LiveRun[] }>(`/workspaces/${this.ws}/runs`);
+    this.runs.set(runs);
     const known = this.knownRunIds;
     this.knownRunIds = new Set(runs.map((run) => run.id));
     if (!known) return;
     const fresh = runs.find((run) => !known.has(run.id) && !run.completed && run.id !== this.activeRunId);
     if (fresh) {
       this.selectRun(fresh);
-      this.revealLiveRun();
+      this.reveal('liveRun');
     }
   }
 
-  openWallet() {
-    const uri = this.walletUri();
+  openWallet(uri: string) {
     // selectRun has already stored the run ID, so the page finds the run again after the wallet.
-    if (uri) window.location.assign(uri);
+    window.location.assign(uri);
   }
 
   async useControl(control: RunControl) {
@@ -306,29 +283,9 @@ export class LiveRunPage implements OnInit {
     }
   }
 
-  answerOf(item: ChecklistItem) {
-    const run = this.live();
-    return (run && this.drafts()[run.id]?.[item.id]?.answer) ?? item.answer;
-  }
-
-  noteOf(item: ChecklistItem) {
-    const run = this.live();
-    return (run && this.drafts()[run.id]?.[item.id]?.note) ?? item.note ?? '';
-  }
-
-  draft(item: ChecklistItem, change: { answer?: 'yes' | 'no'; note?: string }) {
+  async saveAnswers(answers: Answers) {
     const run = this.live();
     if (!run) return;
-    this.drafts.update((drafts) => {
-      const current = drafts[run.id]?.[item.id] ?? { answer: item.answer ?? undefined, note: item.note ?? undefined };
-      return { ...drafts, [run.id]: { ...drafts[run.id], [item.id]: { ...current, ...change } } };
-    });
-  }
-
-  async saveAnswers() {
-    const run = this.live();
-    if (!run) return;
-    const answers = answersToSend(this.drafts()[run.id] ?? {});
     if (!Object.keys(answers).length) {
       this.message.set('Choose Yes or No first.');
       return;
@@ -336,8 +293,8 @@ export class LiveRunPage implements OnInit {
     this.saving.set(true);
     try {
       this.show(await this.api.post<LiveRun>(`/runs/${encodeURIComponent(run.id)}/answers`, { answers }));
-      this.drafts.update(({ [run.id]: _saved, ...rest }) => rest);
       this.message.set('Answers saved.');
+      await this.loadRuns();
     } catch (error) {
       this.message.set(errorText(error));
     } finally {
@@ -350,12 +307,7 @@ export class LiveRunPage implements OnInit {
     if (!run) return;
     try {
       const report = await this.api.get<unknown>(`/runs/${encodeURIComponent(run.id)}/report`);
-      const url = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `wallet-qa-${run.id}.json`;
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      download(`wallet-qa-${run.id}.json`, JSON.stringify(report, null, 2), 'application/json');
     } catch (error) {
       this.message.set(errorText(error));
     }
@@ -368,8 +320,38 @@ export class LiveRunPage implements OnInit {
       await this.api.delete(`/runs/${encodeURIComponent(run.id)}`);
       this.clearRun('cancelled');
       this.message.set('Run cancelled.');
+      await this.loadRuns();
     } catch (error) {
       this.message.set(errorText(error));
+    }
+  }
+
+  // ------------------------------------------------------------------ reports
+  async reportJunit() {
+    try {
+      download(`wallet-qa-${this.workspaceId()}.xml`, await this.api.text(`/workspaces/${this.ws}/report?format=junit`), 'application/xml');
+    } catch (error) {
+      this.message.set(errorText(error));
+    }
+  }
+
+  async reportJson() {
+    try {
+      const report = await this.api.get<unknown>(`/workspaces/${this.ws}/report`);
+      download(`wallet-qa-${this.workspaceId()}.json`, JSON.stringify(report, null, 2), 'application/json');
+    } catch (error) {
+      this.message.set(errorText(error));
+    }
+  }
+
+  async publish() {
+    const ok = await confirm(this.dialog, { title: 'Publish results?', text: PUBLISH_WARNING, confirm: 'Publish' });
+    if (!ok) return;
+    try {
+      const result = await this.api.post<{ tests: unknown[] }>(`/workspaces/${this.ws}/publish`);
+      this.message.set(publishedText(result.tests.length));
+    } catch (error) {
+      this.message.set(publishErrorText(error instanceof ApiError ? error.status : undefined, errorText(error)));
     }
   }
 }

@@ -1,15 +1,18 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { RouterOutlet } from '@angular/router';
+import { MatButtonModule } from '@angular/material/button';
+import { RouterLink, RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'qa-root',
-  imports: [RouterOutlet, MatToolbarModule],
+  imports: [RouterOutlet, RouterLink, MatToolbarModule, MatButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mat-toolbar class="app-bar">
-      <a class="brand" href="/" data-testid="brand">Wallet QA</a>
-      <span class="preview" title="Angular Material preview of the Wallet QA page">Preview</span>
+      <a class="brand" routerLink="/" queryParamsHandling="preserve" id="brand" data-testid="brand">Wallet QA</a>
+      <span class="tagline">Pick a test, run it with the wallet, answer the checklist.</span>
+      <span class="spacer"></span>
+      <a matButton href="/results" id="results-link" data-testid="results-link">Results</a>
     </mat-toolbar>
     <main class="page">
       <router-outlet />
@@ -28,17 +31,23 @@ import { RouterOutlet } from '@angular/router';
       text-decoration: none;
       font: var(--mat-sys-title-large);
     }
-    .preview {
-      padding: 2px 10px;
-      border-radius: var(--mat-sys-corner-full);
-      background: var(--mat-sys-tertiary-container);
-      color: var(--mat-sys-on-tertiary-container);
-      font: var(--mat-sys-label-medium);
+    .tagline {
+      font: var(--mat-sys-body-medium);
+      color: var(--mat-sys-on-surface-variant);
+      white-space: normal;
+    }
+    .spacer {
+      flex: 1;
+    }
+    @media (max-width: 599px) {
+      .tagline {
+        display: none;
+      }
     }
     .page {
       box-sizing: border-box;
       width: 100%;
-      max-width: 760px;
+      max-width: 1280px;
       margin: 0 auto;
       padding: 16px;
     }

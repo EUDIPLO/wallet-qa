@@ -18,7 +18,7 @@ import {
 import { TrustMonitor } from './testing/trust.js';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const publicDir = path.join(root, 'public');
-// The Angular preview: dist/web/browser next to the built server, or after `pnpm build:spa` in dev.
+// The page (web/): dist/web/browser next to the built server, or after `pnpm build:spa` in dev.
 const webDir = [path.join(root, 'web', 'browser'), path.join(root, 'dist', 'web', 'browser')].find(
   (dir) => existsSync(path.join(dir, 'index.html')),
 );

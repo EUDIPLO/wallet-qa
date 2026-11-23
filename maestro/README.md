@@ -27,7 +27,7 @@ simulators and USB-connected Android phones.
 | `wallets/<wallet>/share.yaml` | Consent to a presentation request. |
 | `wallets/<wallet>/refuse.yaml` | A request the wallet must refuse: note what the wallet shows. |
 | `run.sh` | Runs a list of tests in one workspace and saves the JUnit report. |
-| `web/live-run.yaml` | Drives the page preview (`/next/`) in the phone's browser instead of the API: start run, open wallet, verdict. |
+| `web/live-run.yaml` | Drives the page in the phone's browser instead of the API: start run, open wallet, verdict. |
 
 `wallets/paradym` is the first adapter for a real wallet (see its README for the results).
 `wallets/example` has example selectors (`Add`, `Share`, `Send data`, …) and is the template:
@@ -80,9 +80,8 @@ prints that folder at the end.
 
 ### Driving the page instead of the API
 
-`web/live-run.yaml` taps the [Angular Material preview](../README.md#page-contract-for-ui-automation)
-of the page in the phone's browser (Chrome by default, `BROWSER_APP_ID` for another one). It
-needs a workspace ID; create the workspace on the page or with `POST /v1/workspaces`.
+`web/live-run.yaml` taps the [page](../README.md#page-contract-for-ui-automation) in the phone's
+browser (Chrome by default, `BROWSER_APP_ID` for another one). It needs a workspace ID; create the workspace on the page or with `POST /v1/workspaces`.
 
 ```bash
 maestro test -e WORKSPACE=<workspace id> -e SCENARIO=I-EAA-NOTX \
@@ -93,9 +92,11 @@ It selects elements by their test hooks (`id: start-run`, `id: open-wallet`, `id
 Chrome on Android hands Maestro an element's HTML `id` as its resource-id, but not
 `data-testid`, so every hook carries both with the same value.
 
-Before Chrome hands an `openid-credential-offer:` link to the wallet, it asks "Do you trust this
-site with your data?". The flow taps `CHROME_WALLET_PROMPT` (default `Continue`; `Cancel` also
-opens the wallet), runs the wallet adapter, then brings the browser back and reads the verdict.
+Before Chrome hands an `openid-credential-offer:` link to the wallet, it can ask "Do you trust
+this site with your data?" (on the emulator it asked once and then remembered the answer). When
+it asks, the flow taps `CHROME_WALLET_PROMPT` (default `Continue`; `Cancel` also opens the
+wallet). Then it runs the wallet adapter, brings the browser back and reads the verdict.
+Set `QA_URL`, `BROWSER_APP_ID` and `CHROME_WALLET_PROMPT` with `-e`.
 The flow passed on a Pixel 9 emulator (Android 16, Chrome) against a fake EUDIPLO backend.
 Safari on iOS and real wallets behind the page are not checked yet.
 

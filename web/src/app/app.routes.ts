@@ -1,16 +1,17 @@
 import { Routes } from '@angular/router';
 
-// Served under /next/ (baseHref). /next/w/<workspace>?scenario=<id>&run=<id> mirrors the classic
-// page's /w/<workspace> links.
+// /w/<workspace>?scenario=<id>&run=<id> are the links testers, the README and UI test runners use.
 export const routes: Routes = [
   {
-    path: 'w/:workspaceId',
-    loadComponent: () => import('./live-run/live-run').then((m) => m.LiveRunPage),
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () => import('./home/home').then((m) => m.HomePage),
     title: 'Wallet QA',
   },
   {
-    path: '**',
-    loadComponent: () => import('./no-workspace').then((m) => m.NoWorkspacePage),
+    path: 'w/:workspaceId',
+    loadComponent: () => import('./workspace/workspace').then((m) => m.WorkspacePage),
     title: 'Wallet QA',
   },
+  { path: '**', redirectTo: '' },
 ];

@@ -76,7 +76,7 @@ export function createApp(
     published?: PublishedStore;
     /** Bearer token that may remove published results; without it removal is off. */
     adminToken?: string;
-    /** The built Angular preview (dist/web/browser), served under /next/; without it /next answers 404. */
+    /** The built page (dist/web/browser); without it / and /w/<id> answer 503. */
     webDir?: string;
   },
 ) {
@@ -355,7 +355,11 @@ export function createApp(
         await QRCode.toString(value, { type: 'svg', margin: 1, width: 260 }),
       );
   });
-  app.use(express.static(options.publicDir));
+  // The page is the Angular app in web/ (built to dist/web/browser); public/ keeps the results
+  // page and the trust files.
+  const webDir = options.webDir;
+  if (webDir) app.use(express.static(webDir, { index: false }));
+  app.use(express.static(options.publicDir, { index: false }));
   // Same-device return after a presentation (EUDIPLO redirectUri with {sessionId}).
   app.get('/r/:sessionId', async (req, res) => {
     const run = await engine.redirectReceived(String(req.params.sessionId));
@@ -364,25 +368,15 @@ export function createApp(
       run ? `/w/${encodeURIComponent(run.owner)}?run=${run.id}` : '/',
     );
   });
-  // The Angular Material preview of the page (web/, issue #11). Its routes are client-side, so
-  // every /next path that is not a file (/next/w/<workspace>, /next/w/) answers with its
-  // index.html; a missing script or stylesheet stays a 404.
-  const webDir = options.webDir;
-  if (webDir) {
-    app.use('/next', express.static(webDir, { index: false }));
-    app.get('/next{/*rest}', (req, res, next) =>
-      path.extname(req.path)
-        ? next()
-        : res.sendFile(path.join(webDir, 'index.html')),
-    );
-  }
   app.get('/results', (_req, res) =>
     res.sendFile(path.join(options.publicDir, 'results.html')),
   );
-  // The page reads the workspace from the path: /w/<workspace id>.
-  app.get(['/', '/w/:ws'], (_req, res) =>
-    res.sendFile(path.join(options.publicDir, 'index.html')),
-  );
+  // The page reads the workspace from the path: /w/<workspace id>. Its routes are client-side.
+  app.get(['/', '/w/:ws'], (_req, res) => {
+    if (!webDir)
+      throw new ApiError(503, 'The page is not built; run pnpm build');
+    res.sendFile(path.join(webDir, 'index.html'));
+  });
   app.use((_req, _res) => {
     throw new ApiError(404, 'Not found');
   });

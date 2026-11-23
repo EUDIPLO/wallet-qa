@@ -1,9 +1,9 @@
 // What the live run shows, derived from GET /v1/runs/:id. No Angular imports: the repository's
-// node:test suite (tests/web-run-view.test.ts) checks these texts directly.
+// node:test suite (tests/web.test.ts) checks these texts directly.
 //
 // The texts "Status: …", "Verdict: …", "Run ID: …" and "Transaction code: …" and the data-*
 // attributes from contractAttributes() are the page contract UI test runners match on (README,
-// "Page contract"). They are the same as on the classic page (public/app.js). Keep them stable.
+// "Page contract"). They are unchanged from the plain-JS page this app replaced. Keep them stable.
 
 export type RunState = 'preparing' | 'awaiting_wallet' | 'awaiting_tester' | 'finished';
 
