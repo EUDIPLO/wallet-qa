@@ -188,6 +188,13 @@ p {
   }
 
   .answers {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+
+  .answer-buttons {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
@@ -214,7 +221,7 @@ p {
   small {
     display: block;
     color: var(--mat-sys-on-surface-variant);
-    word-break: break-word;
+    overflow-wrap: anywhere;
   }
 
   .passed {

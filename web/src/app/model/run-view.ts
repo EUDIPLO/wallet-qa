@@ -67,9 +67,9 @@ const words = (value: string) => value.replaceAll('_', ' ');
 /** The status badge: "Status: awaiting wallet" while running, "Verdict: passed" once finished. */
 export function badgeText(run: LiveRun | undefined): string {
   if (!run) return 'Verdict: none';
-  return run.completed
-    ? `Verdict: ${run.verdict}${run.attested ? ' (tester-attested)' : ''}`
-    : `Status: ${words(run.state)}`;
+  if (!run.completed) return `Status: ${words(run.state)}`;
+  const attested = run.attested ? ' (tester-attested)' : '';
+  return `Verdict: ${run.verdict}${attested}`;
 }
 
 export function reasonText(run: LiveRun): string {

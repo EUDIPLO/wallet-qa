@@ -1,4 +1,4 @@
-<p id="message" class="message" role="status" data-testid="message">{{ message() }}</p>
+<output id="message" class="message" aria-live="polite" data-testid="message">{{ message() }}</output>
 
 <mat-card appearance="outlined" class="card" id="setup" data-testid="setup">
   <mat-card-header><h2 mat-card-title>Start a test session</h2></mat-card-header>
@@ -39,6 +39,7 @@
       self-reported. Only the wallet, build, platform, device, versions and verdicts are published.
     </p>
     <div class="inline">
+      <label for="upload-file" class="visually-hidden">Workspace JSON report</label>
       <input #file type="file" accept="application/json,.json" id="upload-file" data-testid="upload-file" class="file" (change)="chooseFile($event)" />
       <button matButton="outlined" type="button" class="big" id="choose-file" data-testid="choose-file" (click)="file.click()">
         Choose file

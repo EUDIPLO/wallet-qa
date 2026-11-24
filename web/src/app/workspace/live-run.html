@@ -13,15 +13,14 @@
 >
   <mat-card-header class="live-header">
     <h2 mat-card-title>Live run</h2>
-    <span
+    <output
       id="verdict"
       class="badge"
-      role="status"
       aria-live="polite"
       data-testid="verdict"
       [class.passed]="tone() === 'passed'"
       [class.failed]="tone() === 'failed'"
-      >{{ badge() }}</span
+      >{{ badge() }}</output
     >
   </mat-card-header>
   @if (awaiting() && !e2e) {
@@ -105,7 +104,9 @@
           @for (item of run.checklist; track item.id) {
             <div class="check" [class]="item.status" [id]="'checklist-q-' + item.id" [attr.data-testid]="'checklist-q-' + item.id">
               <p class="ask">{{ item.ask }}{{ item.blocking ? '' : ' (not blocking)' }}</p>
-              <div class="answers" role="group" [attr.aria-label]="item.ask">
+              <fieldset class="answers">
+                <legend class="visually-hidden">{{ item.ask }}</legend>
+                <div class="answer-buttons">
                 @for (value of ['yes', 'no']; track value) {
                   <button
                     type="button"
@@ -118,7 +119,8 @@
                     {{ value === 'yes' ? 'Yes' : 'No' }}
                   </button>
                 }
-              </div>
+                </div>
+              </fieldset>
               <mat-form-field appearance="outline" class="full" subscriptSizing="dynamic">
                 <mat-label>Note (optional)</mat-label>
                 <input

@@ -139,7 +139,8 @@ export function catalogSections(scenarios: Scenario[], runs: LiveRun[], query: s
   return sections;
 }
 
-export const tagsOf = (scenarios: Scenario[]) => [...new Set(scenarios.flatMap((s) => s.tags))].sort();
+export const tagsOf = (scenarios: Scenario[]) =>
+  [...new Set(scenarios.flatMap((s) => s.tags))].sort((a, b) => a.localeCompare(b));
 
 /** "3 of 41 run": tests with a finished run, of the tests this instance supports. */
 export function progressText(scenarios: Scenario[], runs: LiveRun[]): string {

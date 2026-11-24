@@ -181,7 +181,7 @@ export class WorkspacePage implements OnInit {
   // ------------------------------------------------------------------ runs
   async start() {
     const scenario = this.selected();
-    if (!scenario || scenario.availability !== 'ready') return;
+    if (scenario?.availability !== 'ready') return;
     this.starting.set(true);
     const body: { scenarioId: string; timeoutSeconds?: number } = { scenarioId: scenario.id };
     const timeout = Number(this.timeoutSeconds());

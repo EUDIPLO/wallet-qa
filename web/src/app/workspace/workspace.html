@@ -1,4 +1,4 @@
-<p id="message" class="message" role="status" data-testid="message">{{ message() }}</p>
+<output id="message" class="message" aria-live="polite" data-testid="message">{{ message() }}</output>
 
 @if (workspace()) {
   @if (editing()) {
