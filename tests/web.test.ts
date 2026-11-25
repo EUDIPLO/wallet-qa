@@ -40,6 +40,7 @@ import {
   workspaceSummary,
   type Scenario,
 } from '../web/src/app/model/workspace-view.js';
+import { RUN_TRACE, catalogOverview, catalogTotalText, sectionCountText } from '../web/src/app/model/home-view.js';
 import { testWorkspaces, WS } from './helpers.js';
 
 class FakeBackend implements Backend {
@@ -184,6 +185,27 @@ test('page: the catalog groups by section, filters, and shows the latest status 
   assert.equal(statusText(undefined), 'not run');
   assert.equal(statusText(run('X', { verdict: 'failed' })), 'failed');
   assert.equal(statusText(run('X', { completed: false, verdict: null })), 'running');
+});
+
+test('start page: the run trace uses the live run texts, and the catalog overview counts per section', () => {
+  // The trace shows the statuses a tester will see on the run screen (badgeText above).
+  const statuses = RUN_TRACE.flatMap((step) => step.statuses.map((status) => status.text));
+  assert.ok(statuses.includes('Status: awaiting wallet'));
+  assert.ok(statuses.includes('Status: awaiting tester'));
+  const scenario = (id: string, section: string, availability = 'ready'): Scenario => ({
+    id, section, label: `Label ${id}`, description: '', profile: 'p', tags: [], prerequisites: [], availability,
+  });
+  const sections = catalogOverview([
+    scenario('I-1', 'Issuance'), scenario('I-2', 'Issuance', 'unsupported'), scenario('P-1', 'Presentation'),
+    scenario('P-2', 'Presentation'), scenario('P-3', 'Presentation'), scenario('P-4', 'Presentation'), scenario('X-1', 'Other'),
+  ]);
+  assert.deepEqual(sections.map((s) => [s.name, s.ready, s.pending]), [['Issuance', 1, 1], ['Presentation', 4, 0], ['Other', 1, 0]]);
+  assert.deepEqual(sections[1].examples, ['Label P-1', 'Label P-2', 'Label P-3']);
+  assert.match(sections[0].question, /OpenID4VCI/);
+  assert.equal(sections[2].question, '');
+  assert.equal(sectionCountText(sections[0]), '1 test, 1 more waiting for fixtures');
+  assert.equal(sectionCountText(sections[1]), '4 tests');
+  assert.equal(catalogTotalText(sections), '6 tests run on this instance.');
 });
 
 test('page: the instance trust setup and the publish messages', () => {

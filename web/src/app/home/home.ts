@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
@@ -6,8 +6,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router, RouterLink } from '@angular/router';
 import { Api, ApiError, LAST_WORKSPACE_KEY, errorText, storage } from '../api';
+import { RUN_TRACE, catalogOverview, catalogTotalText, sectionCountText } from '../model/home-view';
 import {
   PUBLISH_WARNING,
+  Scenario,
   Workspace,
   WorkspaceFormValue,
   publishErrorText,
@@ -20,7 +22,10 @@ import { confirm } from '../shared/confirm-dialog';
 import { InstanceInfo } from '../shared/instance-info';
 import { WorkspaceForm } from '../shared/workspace-form';
 
-/** Without a workspace: create one, join one, or publish a report from another instance. */
+/**
+ * The start page: what Wallet QA does and what this instance tests, then create a workspace,
+ * join one, or publish a report from another instance.
+ */
 @Component({
   selector: 'qa-home',
   imports: [MatButtonModule, MatCardModule, MatFormFieldModule, MatInputModule, RouterLink, InstanceInfo, WorkspaceForm],
@@ -40,6 +45,23 @@ export class HomePage {
   readonly joinInput = signal('');
   readonly uploadFile = signal<File | undefined>(undefined);
   readonly formValue = workspaceForm();
+
+  readonly trace = RUN_TRACE;
+  readonly scenarios = signal<Scenario[]>([]);
+  readonly sections = computed(() => catalogOverview(this.scenarios()));
+  readonly total = computed(() => catalogTotalText(this.sections()));
+  readonly countText = sectionCountText;
+
+  constructor() {
+    // The overview is extra; the page works without it.
+    this.api.get<{ scenarios: Scenario[] }>('/scenarios').then((data) => this.scenarios.set(data.scenarios), () => undefined);
+  }
+
+  /** "Start a test session" in the intro: bring the form into view and put the cursor in it. */
+  startSession() {
+    document.getElementById('setup')?.scrollIntoView({ block: 'start' });
+    document.getElementById('wallet-name')?.focus({ preventScroll: true });
+  }
 
   async create(form: WorkspaceFormValue) {
     this.busy.set(true);

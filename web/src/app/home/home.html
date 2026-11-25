@@ -1,57 +1,123 @@
 <output id="message" class="message" aria-live="polite" data-testid="message">{{ message() }}</output>
 
-<mat-card appearance="outlined" class="card" id="setup" data-testid="setup">
-  <mat-card-header><h2 mat-card-title>Start a test session</h2></mat-card-header>
-  <mat-card-content>
-    <p class="muted">
-      A workspace groups your runs and the wallet build you test. Open its link on the phone and the laptop to see the
-      same runs on both.
+<section class="intro" id="intro" data-testid="intro" aria-labelledby="intro-heading">
+  <div class="pitch">
+    <h1 id="intro-heading">Test an EUDI wallet against a real issuer and verifier</h1>
+    <p class="lead">
+      Pick a test, run it with the wallet on your phone, and get a verdict. EUDIPLO plays issuer and verifier; Wallet QA
+      decides from what EUDIPLO recorded and what you saw in the wallet.
     </p>
-    <qa-workspace-form [value]="formValue" [busy]="busy()" (saved)="create($event)" />
-  </mat-card-content>
-</mat-card>
-
-<mat-card appearance="outlined" class="card" id="join-existing" data-testid="join-existing">
-  <mat-card-header><h2 mat-card-title>Join a workspace</h2></mat-card-header>
-  <mat-card-content>
-    <form class="inline" (submit)="$event.preventDefault(); join()">
-      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
-        <mat-label>Workspace link or ID</mat-label>
-        <input matInput id="join-input" data-testid="join-input" placeholder="https://…/w/…" [value]="joinInput()" (input)="joinInput.set($any($event.target).value)" />
-      </mat-form-field>
-      <button matButton="outlined" type="submit" class="big" id="join-button" data-testid="join-button">Join</button>
-    </form>
-  </mat-card-content>
-  @if (lastWorkspace()) {
-    <mat-card-actions>
-      <button matButton="filled" type="button" class="big" id="resume-workspace" data-testid="resume-workspace" (click)="resume()">
-        Continue the last workspace
-      </button>
-    </mat-card-actions>
-  }
-</mat-card>
-
-<mat-card appearance="outlined" class="card" id="upload-report" data-testid="upload-report">
-  <mat-card-header><h2 mat-card-title>Publish a report from another instance</h2></mat-card-header>
-  <mat-card-content>
-    <p class="muted">
-      Upload a workspace JSON report (Reports → JSON) to the public <a routerLink="/results">results page</a>. It is marked
-      self-reported. Only the wallet, build, platform, device, versions and verdicts are published.
-    </p>
-    <div class="inline">
-      <label for="upload-file" class="visually-hidden">Workspace JSON report</label>
-      <input #file type="file" accept="application/json,.json" id="upload-file" data-testid="upload-file" class="file" (change)="chooseFile($event)" />
-      <button matButton="outlined" type="button" class="big" id="choose-file" data-testid="choose-file" (click)="file.click()">
-        Choose file
-      </button>
-      <span class="muted file-name" id="upload-file-name" data-testid="upload-file-name">{{ uploadFile()?.name ?? 'No file chosen' }}</span>
+    <div class="actions">
+      @if (lastWorkspace()) {
+        <button matButton="filled" type="button" class="big" id="resume-workspace" data-testid="resume-workspace" (click)="resume()">
+          Continue the last workspace
+        </button>
+        <button matButton="outlined" type="button" class="big" id="start-session" data-testid="start-session" (click)="startSession()">
+          Start a new session
+        </button>
+      } @else {
+        <button matButton="filled" type="button" class="big" id="start-session" data-testid="start-session" (click)="startSession()">
+          Start a test session
+        </button>
+        <a matButton class="big" routerLink="/results" id="intro-results" data-testid="intro-results">See published results</a>
+      }
     </div>
-  </mat-card-content>
-  <mat-card-actions>
-    <button matButton="outlined" type="button" class="big" id="upload-button" data-testid="upload-button" (click)="upload()">
-      Publish as self-reported
-    </button>
-  </mat-card-actions>
-</mat-card>
+    <p class="why">
+      A wallet has to work with every issuer and verifier it meets, not just the one its team builds against. Each
+      verdict here rests on the protocol exchange itself, so a failure points at what the wallet sent. Published results
+      go to the <a routerLink="/results">results page</a>, where anyone can repeat them with the same build.
+    </p>
+  </div>
 
-<qa-instance-info />
+  <ol class="trace" id="run-trace" data-testid="run-trace" aria-label="How a run works">
+    @for (step of trace; track step.title) {
+      <li class="trace-step">
+        <h2>{{ step.title }}</h2>
+        <p>{{ step.text }}</p>
+        @if (step.statuses.length) {
+          <div class="statuses">
+            @for (status of step.statuses; track status.text) {
+              <span class="status" [class]="status.tone">{{ status.text }}</span>
+            }
+          </div>
+        }
+      </li>
+    }
+  </ol>
+</section>
+
+@if (sections().length) {
+  <section class="catalog" id="catalog-overview" data-testid="catalog-overview" aria-labelledby="catalog-heading">
+    <div class="catalog-heading">
+      <h2 id="catalog-heading">What the tests check</h2>
+      <p class="muted" id="catalog-total" data-testid="catalog-total">{{ total() }}</p>
+    </div>
+    <div class="sections">
+      @for (section of sections(); track section.name) {
+        <div class="section" [id]="'catalog-' + section.name.toLowerCase()" [attr.data-testid]="'catalog-' + section.name.toLowerCase()">
+          <h3>{{ section.name }}</h3>
+          <p class="question">{{ section.question }}</p>
+          <p class="count">{{ countText(section) }}</p>
+          <ul>
+            @for (example of section.examples; track example) {
+              <li>{{ example }}</li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+  </section>
+}
+
+<div class="forms">
+  <mat-card appearance="outlined" class="card setup" id="setup" data-testid="setup">
+    <mat-card-header><h2 mat-card-title>Start a test session</h2></mat-card-header>
+    <mat-card-content>
+      <p class="muted">
+        A workspace groups your runs and the wallet build you test. Open its link on the phone and the laptop to see the
+        same runs on both.
+      </p>
+      <qa-workspace-form [value]="formValue" [busy]="busy()" (saved)="create($event)" />
+    </mat-card-content>
+  </mat-card>
+
+  <div class="side">
+    <mat-card appearance="outlined" class="card" id="join-existing" data-testid="join-existing">
+      <mat-card-header><h2 mat-card-title>Join a workspace</h2></mat-card-header>
+      <mat-card-content>
+        <form class="inline" (submit)="$event.preventDefault(); join()">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="grow">
+            <mat-label>Workspace link or ID</mat-label>
+            <input matInput id="join-input" data-testid="join-input" placeholder="https://…/w/…" [value]="joinInput()" (input)="joinInput.set($any($event.target).value)" />
+          </mat-form-field>
+          <button matButton="outlined" type="submit" class="big" id="join-button" data-testid="join-button">Join</button>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="card" id="upload-report" data-testid="upload-report">
+      <mat-card-header><h2 mat-card-title>Publish a report from another instance</h2></mat-card-header>
+      <mat-card-content>
+        <p class="muted">
+          Upload a workspace JSON report (Reports → JSON) to the public <a routerLink="/results">results page</a>. It is
+          marked self-reported. Only the wallet, build, platform, device, versions and verdicts are published.
+        </p>
+        <div class="inline">
+          <label for="upload-file" class="visually-hidden">Workspace JSON report</label>
+          <input #file type="file" accept="application/json,.json" id="upload-file" data-testid="upload-file" class="file" (change)="chooseFile($event)" />
+          <button matButton="outlined" type="button" class="big" id="choose-file" data-testid="choose-file" (click)="file.click()">
+            Choose file
+          </button>
+          <span class="muted file-name" id="upload-file-name" data-testid="upload-file-name">{{ uploadFile()?.name ?? 'No file chosen' }}</span>
+        </div>
+      </mat-card-content>
+      <mat-card-actions>
+        <button matButton="outlined" type="button" class="big" id="upload-button" data-testid="upload-button" (click)="upload()">
+          Publish as self-reported
+        </button>
+      </mat-card-actions>
+    </mat-card>
+
+    <qa-instance-info />
+  </div>
+</div>

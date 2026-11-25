@@ -200,7 +200,8 @@ stable contract so Maestro, XCUITest, Espresso or Playwright can drive it:
   | Hook | Element |
   | --- | --- |
   | `workspace-form`, `tester`, `wallet-name`, `wallet-version`, `wallet-platform`, `wallet-device`, `save-workspace` | Create or edit a workspace (platform is a native `<select>`) |
-  | `join-input`, `join-button`, `resume-workspace` | Join a workspace, continue the last one |
+  | `start-session`, `resume-workspace`, `intro-results`, `run-trace`, `catalog-overview`, `catalog-total`, `catalog-<section>` | Start page intro: start a session, continue the last workspace, the catalog at a glance |
+  | `join-input`, `join-button` | Join a workspace |
   | `upload-file`, `choose-file`, `upload-button` | Publish a report from another instance |
   | `edit-workspace`, `join-toggle`, `join-link`, `join-qr` | Workspace bar, join on another device |
   | `search`, `tag-filter`, `test-<test id>`, `progress` | Catalog (the tag filter is a native `<select>`) |
