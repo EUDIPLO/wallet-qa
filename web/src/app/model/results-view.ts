@@ -68,5 +68,6 @@ export function verdictTone(verdict: string): 'passed' | 'failed' | 'neutral' {
 }
 
 export function loadErrorText(status: number | undefined, message: string): string {
-  return `Could not load the published results: ${status ? `HTTP ${status}` : message}`;
+  const reason = status ? `HTTP ${status}` : message;
+  return `Could not load the published results: ${reason}`;
 }

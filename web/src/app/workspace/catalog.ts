@@ -113,11 +113,12 @@ import { Scenario, catalogSections, progressText, tagsOf } from '../model/worksp
     .status {
       display: inline-block;
       padding: 2px 10px;
-      line-height: 20px;
       border-radius: var(--mat-sys-corner-full);
       background: var(--mat-sys-surface-container-high);
       color: var(--mat-sys-on-surface-variant);
       font: var(--mat-sys-label-medium);
+      // After font: the shorthand resets line-height.
+      line-height: 20px;
       white-space: nowrap;
     }
     .status.passed {
