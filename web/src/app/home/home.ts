@@ -4,7 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Api, ApiError, LAST_WORKSPACE_KEY, errorText, storage } from '../api';
 import {
   PUBLISH_WARNING,
@@ -23,7 +23,7 @@ import { WorkspaceForm } from '../shared/workspace-form';
 /** Without a workspace: create one, join one, or publish a report from another instance. */
 @Component({
   selector: 'qa-home',
-  imports: [MatButtonModule, MatCardModule, MatFormFieldModule, MatInputModule, InstanceInfo, WorkspaceForm],
+  imports: [MatButtonModule, MatCardModule, MatFormFieldModule, MatInputModule, RouterLink, InstanceInfo, WorkspaceForm],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './home.html',
   styleUrl: './home.scss',

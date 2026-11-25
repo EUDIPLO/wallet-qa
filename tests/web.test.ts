@@ -208,7 +208,7 @@ test('page: the instance trust setup and the publish messages', () => {
   assert.equal(publishErrorText(409, 'Already published'), 'Could not publish: Already published');
 });
 
-test('HTTP: the page is served at / and /w/<workspace>; results, trust and the API stay', async () => {
+test('HTTP: the page is served at /, /w/<workspace> and /results, its bundle under /web/; trust and the API stay', async () => {
   const { engine } = await setup();
   const webDir = await mkdtemp(path.join(os.tmpdir(), 'wallet-qa-web-'));
   await writeFile(path.join(webDir, 'index.html'), '<qa-root></qa-root>');
@@ -221,15 +221,16 @@ test('HTTP: the page is served at / and /w/<workspace>; results, trust and the A
   const withWeb = await listen(createApp(engine, { publicDir: path.resolve('public'), publicOrigin: 'http://localhost', webDir }));
   const without = await listen(createApp(engine, { publicDir: path.resolve('public'), publicOrigin: 'http://localhost' }));
   try {
-    for (const route of ['/', `/w/${WS}`, `/w/${WS}?scenario=I-EAA-NOTX&e2e=1`]) {
+    for (const route of ['/', `/w/${WS}`, `/w/${WS}?scenario=I-EAA-NOTX&e2e=1`, '/results']) {
       const response = await fetch(withWeb.base + route);
       assert.equal(response.status, 200, route);
       assert.equal(await response.text(), '<qa-root></qa-root>', route);
     }
-    assert.match(await (await fetch(`${withWeb.base}/main-ABC.js`)).text(), /console/);
-    assert.equal((await fetch(`${withWeb.base}/missing.js`)).status, 404);
-    assert.match(await (await fetch(`${withWeb.base}/results`)).text(), /<title>Wallet QA results<\/title>/);
-    assert.equal((await fetch(`${withWeb.base}/results.js`)).status, 200);
+    // The bundle is under /web/ only (deployUrl), the one prefix a hosted proxy opens for /results.
+    assert.match(await (await fetch(`${withWeb.base}/web/main-ABC.js`)).text(), /console/);
+    assert.equal((await fetch(`${withWeb.base}/main-ABC.js`)).status, 404);
+    assert.equal((await fetch(`${withWeb.base}/web/missing.js`)).status, 404);
+    assert.equal((await fetch(`${withWeb.base}/results.js`)).status, 404);
     assert.equal((await fetch(`${withWeb.base}/trust/trust.json`)).status, 200);
     assert.equal((await fetch(`${withWeb.base}/v1/scenarios`)).status, 200);
     // Without a build the page says so instead of serving an empty page.

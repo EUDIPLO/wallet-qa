@@ -13,7 +13,7 @@
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server/server.js",
     "test": "node --import tsx --test tests/*.test.ts",
-    "check": "pnpm run build:server && pnpm test",
+    "check": "pnpm run build && pnpm test",
     "fixtures:generate": "node scripts/generate-fixtures.mjs",
     "smoke": "tsx scripts/smoke.ts"
   },

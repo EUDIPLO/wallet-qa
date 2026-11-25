@@ -213,15 +213,16 @@ stable contract so Maestro, XCUITest, Espresso or Playwright can drive it:
   | `evidence`, `audit`, `cancel-run` | Evidence, audit JSON, cancel |
   | `view-run-<run id>`, `report-junit`, `report-json`, `publish-results`, `confirm-ok`, `confirm-cancel` | Runs, reports, publishing |
   | `message`, `instance-info` | Status message, this instance's trust setup |
+  | `results-link`, `features`, `feature-<id>`, `wallet-filter`, `results`, `result-<id>` | Results page (`/results`; the wallet filter is a native `<select>`) |
 
 The [Maestro flows](maestro/README.md) use the API instead of the page: they start a run,
 open its same-device link in the wallet, and wait for the verdict.
 [`maestro/web/live-run.yaml`](maestro/web/live-run.yaml) drives the page itself.
 
 `web/` is its own pnpm package: Angular 22 needs TypeScript 6.0 (the server uses 7) and
-Node.js 22.22.3 or later. `pnpm run build` builds it into `dist/web`, which the server serves;
-without it, `/` answers 503. The public results page (`/results`) is still plain HTML in
-`public/`.
+Node.js 22.22.3 or later. `pnpm run build` builds it into `dist/web`, which the server serves
+under `/web/`; without it, `/`, `/w/<workspace>` and `/results` answer 503. `pnpm check` builds
+the page too.
 
 ## Test trust
 
