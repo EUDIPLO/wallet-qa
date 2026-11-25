@@ -2,26 +2,46 @@
 @use 'styles/theme-colors';
 
 // EUDIPLO's Material 3 theme (palettes from styles/_theme-colors.scss, Roboto, density 0). The
-// colour scheme follows the device: theme-type color-scheme emits light-dark() values.
+// colour scheme follows the device. Light and dark are emitted separately, not as light-dark()
+// (theme-type: color-scheme): browsers before Chrome 123 and Safari 17.5 drop light-dark()
+// values, and stock Android emulator images, which UI test runs use, ship such a Chrome.
 html {
-  color-scheme: light dark;
+  color-scheme: light;
   @include mat.theme(
     (
       color: (
         primary: theme-colors.$primary-palette,
         tertiary: theme-colors.$tertiary-palette,
-        theme-type: color-scheme,
+        theme-type: light,
       ),
       typography: Roboto,
       density: 0,
     )
   );
 
-  // Status colours, as in the EUDIPLO client (light and dark values).
-  --qa-success: light-dark(#2e7d32, #81c784);
-  --qa-danger: light-dark(#c62828, #ef9a9a);
+  // Status colours, as in the EUDIPLO client.
+  --qa-success: #2e7d32;
+  --qa-danger: #c62828;
   --qa-success-soft: color-mix(in srgb, var(--qa-success) 14%, transparent);
   --qa-danger-soft: color-mix(in srgb, var(--qa-danger) 14%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+    @include mat.theme(
+      (
+        color: (
+          primary: theme-colors.$primary-palette,
+          tertiary: theme-colors.$tertiary-palette,
+          theme-type: dark,
+        ),
+      )
+    );
+
+    --qa-success: #81c784;
+    --qa-danger: #ef9a9a;
+  }
 }
 
 body {
