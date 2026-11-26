@@ -204,13 +204,14 @@ stable contract so Maestro, XCUITest, Espresso or Playwright can drive it:
   | `join-input`, `join-button` | Join a workspace |
   | `upload-file`, `choose-file`, `upload-button` | Publish a report from another instance |
   | `edit-workspace`, `join-toggle`, `join-link`, `join-qr` | Workspace bar, join on another device |
-  | `search`, `tag-filter`, `test-<test id>`, `progress` | Catalog (the tag filter is a native `<select>`) |
-  | `test-label`, `test-id`, `test-description`, `start-run` | Selected test, Start run |
+  | `search`, `tag-filter`, `test-<test id>`, `progress`, `section-<section>` | Catalog (the tag filter is a native `<select>`; `section-issuance` etc. fold a section) |
+  | `test-label`, `test-id`, `test-tags`, `test-description`, `start-run`, `change-test` | Selected test, Start run, Change test (phone only: jumps to the catalog) |
   | `verdict` | `Status: …` / `Verdict: …` |
   | `open-wallet`, `tx-code`, `qr`, `wallet-uri` | Open wallet, `Transaction code: …`, QR code, link |
-  | `dc-api-button` | `Request with Digital Credentials API`, shown instead of Open wallet, QR code and link on the `P-DCAPI-*` tests |
+  | `dc-api-button`, `dc-api-unsupported` | `Request with Digital Credentials API`, shown instead of Open wallet, QR code and link on the `P-DCAPI-*` tests; the hint when the browser lacks the API |
   | `run-id`, `scenario-id`, `reason`, `step`, `instruction` | Run details |
-  | `checklist-q-<id>`, `checklist-q-<id>-yes`, `-no`, `-note`, `save-answers` | Checklist |
+  | `checklist-q-<id>`, `checklist-q-<id>-yes`, `-no`, `-note`, `save-answers` | Checklist, shown once the wallet part is over |
+  | `checklist-later`, `checklist-open` | The folded checklist while the run waits for the wallet; `checklist-open` shows it early |
   | `control-<id>` | Run controls (revoke, suspend) |
   | `evidence`, `audit`, `cancel-run` | Evidence, audit JSON, cancel |
   | `view-run-<run id>`, `report-junit`, `report-json`, `publish-results`, `confirm-ok`, `confirm-cancel` | Runs, reports, publishing |

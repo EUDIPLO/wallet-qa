@@ -43,11 +43,14 @@
               id="dc-api-button"
               class="big full"
               data-testid="dc-api-button"
-              [disabled]="dcApiBusy()"
+              [disabled]="dcApiBusy() || !dcApiSupported"
               (click)="requestDcApi()"
             >
               Request with Digital Credentials API
             </button>
+            @if (!dcApiSupported) {
+              <p class="warning" id="dc-api-unsupported" data-testid="dc-api-unsupported">{{ dcApiElsewhere }}</p>
+            }
           } @else {
           <!-- One tap opens the wallet: no menu or dialog in between. -->
           <button
@@ -112,7 +115,16 @@
         </div>
       }
 
-      @if (run.checklist.length) {
+      @if (run.checklist.length && !checklistShown()) {
+        <!-- Folded while the wallet part runs, so nobody answers before trying. -->
+        <div class="checklist-later" id="checklist-later" data-testid="checklist-later">
+          <p class="muted">{{ checklistLater() }}</p>
+          <button matButton type="button" id="checklist-open" data-testid="checklist-open" (click)="openChecklist()">
+            Answer now
+          </button>
+        </div>
+      }
+      @if (run.checklist.length && checklistShown()) {
         <section class="checklist" id="checklist" data-testid="checklist">
           <h3>Checklist</h3>
           <p class="muted">Blocking questions decide the verdict. Answer what you saw in the wallet.</p>

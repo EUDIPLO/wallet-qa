@@ -155,8 +155,29 @@ export function dcApiErrorText(error: unknown): string {
   return `Digital Credentials API: ${error instanceof Error ? error.message : String(error)}`;
 }
 
-export const NO_DC_API_TEXT =
-  'This browser has no Digital Credentials API. Use a browser that supports it, such as a current Chrome.';
+/**
+ * True once the tester should answer the checklist: the wallet part is over. While the run waits
+ * for the wallet the checklist stays folded, so nobody answers before trying; it can still be
+ * opened early, since a No ends the run right away.
+ */
+export function checklistDue(run: LiveRun): boolean {
+  return run.completed || run.state === 'awaiting_tester';
+}
+
+/** The folded checklist's line while the wallet part is still running. */
+export function checklistLaterText(run: LiveRun): string {
+  const count = run.checklist.length;
+  return `${count} ${count === 1 ? 'question' : 'questions'} to answer once the wallet is done.`;
+}
+
+/** Whether this browser has the Digital Credentials API (window.DigitalCredential). */
+export function hasDcApi(scope: object): boolean {
+  const credentials = (scope as { navigator?: { credentials?: { get?: unknown } } }).navigator?.credentials;
+  return 'DigitalCredential' in scope && typeof credentials?.get === 'function';
+}
+
+export const DC_API_ELSEWHERE_TEXT =
+  'This browser has no Digital Credentials API. Open this workspace in a current Chrome on the phone with the wallet (Join on another device).';
 
 /** The URI the Open wallet button navigates to, or undefined when it must stay disabled. */
 export function walletLink(run: LiveRun): string | undefined {

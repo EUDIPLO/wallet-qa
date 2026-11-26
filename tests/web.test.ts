@@ -16,7 +16,10 @@ import {
   answersToSend,
   awaitingWallet,
   badgeText,
+  checklistDue,
+  checklistLaterText,
   contractAttributes,
+  hasDcApi,
   credentialRequest,
   dcApiErrorText,
   dcApiRequest,
@@ -31,6 +34,7 @@ import {
 } from '../web/src/app/model/run-view.js';
 import {
   catalogSections,
+  scenarioChips,
   certificateText,
   instanceRootText,
   instanceSummary,
@@ -229,6 +233,26 @@ test('page: the catalog groups by section, filters, and shows the latest status 
   assert.equal(statusText(undefined), 'not run');
   assert.equal(statusText(run('X', { verdict: 'failed' })), 'failed');
   assert.equal(statusText(run('X', { completed: false, verdict: null })), 'running');
+  // Only tests with a run or without support get a chip; sections count finished of supported tests.
+  const quiet = catalogSections([...scenarios, scenario('I-NEW', 'Issuance', [])], runs, '', '');
+  assert.deepEqual(quiet.flatMap((s) => s.items.map((i) => `${i.scenario.id}:${i.chip}`)), ['I-A:true', 'I-NEW:false', 'P-B:true', 'R-OFF:true']);
+  assert.deepEqual(quiet.map((s) => s.count), ['1/2', '0/1', '0/0']);
+  assert.deepEqual(scenarioChips(scenarios[0]), ['p', 'eaa']);
+});
+
+test('page: the checklist stays folded while the wallet part runs', () => {
+  const live = (extra: Partial<LiveRun>) => ({ completed: false, state: 'awaiting_wallet', checklist: [{ id: 'a' }, { id: 'b' }], ...extra }) as LiveRun;
+  assert.equal(checklistDue(live({})), false);
+  assert.equal(checklistDue(live({ state: 'awaiting_tester' })), true);
+  assert.equal(checklistDue(live({ completed: true, state: 'finished' })), true);
+  assert.equal(checklistLaterText(live({})), '2 questions to answer once the wallet is done.');
+  assert.equal(checklistLaterText(live({ checklist: [{ id: 'a' }] as LiveRun['checklist'] })), '1 question to answer once the wallet is done.');
+});
+
+test('page: the Digital Credentials API is detected before the button is pressed', () => {
+  assert.equal(hasDcApi({}), false);
+  assert.equal(hasDcApi({ navigator: { credentials: { get: () => undefined } } }), false);
+  assert.equal(hasDcApi({ DigitalCredential: class {}, navigator: { credentials: { get: () => undefined } } }), true);
 });
 
 test('start page: the run trace uses the live run texts, and the catalog overview counts per section', () => {

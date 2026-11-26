@@ -156,6 +156,22 @@ p {
   margin: 12px 0;
 }
 
+.checklist-later {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 16px 0;
+  padding: 8px 8px 8px 12px;
+  border: 1px dashed var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-medium);
+
+  p {
+    margin: 0;
+  }
+}
+
 .checklist {
   margin: 16px 0;
 

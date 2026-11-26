@@ -41,7 +41,22 @@ import { Scenario, catalogSections, progressText, tagsOf } from '../model/worksp
     </div>
     <div id="test-list" data-testid="test-list">
       @for (section of sections(); track section.name) {
-        <h3 class="section">{{ section.name }}</h3>
+        <h3 class="section">
+          <button
+            type="button"
+            class="section-toggle"
+            [id]="'section-' + section.name.toLowerCase()"
+            [attr.data-testid]="'section-' + section.name.toLowerCase()"
+            [attr.aria-expanded]="isOpen(section.name)"
+            [disabled]="filtering()"
+            (click)="toggle(section.name)"
+          >
+            <span class="chevron" aria-hidden="true">{{ isOpen(section.name) ? '▾' : '▸' }}</span>
+            <span class="section-name">{{ section.name }}</span>
+            <span class="section-count">{{ section.count }}</span>
+          </button>
+        </h3>
+        @if (isOpen(section.name)) {
         <mat-action-list>
           @for (item of section.items; track item.scenario.id) {
             <button
@@ -56,11 +71,14 @@ import { Scenario, catalogSections, progressText, tagsOf } from '../model/worksp
               (click)="selected.emit(item.scenario.id)"
             >
               <span matListItemTitle class="test-id">{{ item.scenario.id }}</span>
-              <span matListItemLine>{{ item.scenario.label }}</span>
-              <span matListItemMeta class="meta"><span class="status" [class]="item.tone">{{ item.status }}</span></span>
+              <span matListItemLine class="label">{{ item.scenario.label }}</span>
+              @if (item.chip) {
+                <span matListItemMeta class="meta"><span class="status" [class]="item.tone">{{ item.status }}</span></span>
+              }
             </button>
           }
         </mat-action-list>
+        }
       } @empty {
         <p class="muted">No test matches.</p>
       }
@@ -87,9 +105,41 @@ import { Scenario, catalogSections, progressText, tagsOf } from '../model/worksp
       margin: 12px 0 4px;
     }
     .section {
-      margin: 16px 0 0;
-      font: var(--mat-sys-title-small);
+      margin: 12px 0 0;
+    }
+    .section-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-height: 40px;
+      padding: 0 8px;
+      border: 0;
+      border-radius: var(--mat-sys-corner-medium);
+      background: none;
       color: var(--mat-sys-on-surface-variant);
+      font: var(--mat-sys-title-small);
+      text-align: left;
+      cursor: pointer;
+    }
+    .section-toggle:hover {
+      background: var(--mat-sys-surface-container);
+    }
+    .section-name {
+      flex: 1;
+    }
+    .section-count {
+      font: var(--mat-sys-label-medium);
+    }
+    // Labels wrap instead of ending in an ellipsis; the item grows with them.
+    .test.mdc-list-item {
+      height: auto;
+      padding-top: 8px;
+      padding-bottom: 8px;
+    }
+    .test .label {
+      white-space: normal;
+      overflow: visible;
     }
     .test {
       border-radius: var(--mat-sys-corner-medium);
@@ -145,9 +195,27 @@ export class Catalog {
   readonly selectedId = input('');
   readonly selected = output<string>();
 
+  /** Folded sections. A search or tag filter opens all of them, so no match is hidden. */
+  readonly closed = signal<ReadonlySet<string>>(new Set());
   readonly query = signal('');
   readonly tag = signal('');
   readonly tags = computed(() => tagsOf(this.scenarios()));
   readonly progress = computed(() => progressText(this.scenarios(), this.runs()));
+  readonly filtering = computed(() => !!this.query().trim() || !!this.tag());
+
+  isOpen(name: string) {
+    return this.filtering() || !this.closed().has(name);
+  }
+
+  toggle(name: string) {
+    if (this.filtering()) return;
+    this.closed.update((closed) => {
+      const next = new Set(closed);
+      if (this.isOpen(name)) next.add(name);
+      else next.delete(name);
+      return next;
+    });
+  }
+
   readonly sections = computed(() => catalogSections(this.scenarios(), this.runs(), this.query(), this.tag()));
 }

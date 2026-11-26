@@ -14,6 +14,10 @@ import {
   SyncState,
   answersToSend,
   awaitingWallet,
+  checklistDue,
+  checklistLaterText,
+  DC_API_ELSEWHERE_TEXT,
+  hasDcApi,
   badgeText,
   contractAttributes,
   dcApiRequest,
@@ -67,6 +71,20 @@ export class LiveRunPanel {
   readonly auditRequested = output<void>();
   readonly cancelRequested = output<void>();
 
+  /** Checked once: whether this browser can hand a dc-api request to a wallet. */
+  readonly dcApiSupported = hasDcApi(window);
+  readonly dcApiElsewhere = DC_API_ELSEWHERE_TEXT;
+  /** Runs whose checklist the tester opened before the wallet part was over. */
+  readonly checklistOpened = signal<ReadonlySet<string>>(new Set());
+  readonly checklistShown = computed(() => {
+    const run = this.live();
+    return !!run && (checklistDue(run) || this.checklistOpened().has(run.id));
+  });
+  readonly checklistLater = computed(() => {
+    const run = this.live();
+    return run ? checklistLaterText(run) : '';
+  });
+
   /** Unsaved checklist answers per run. */
   readonly drafts = signal<Record<string, Draft>>({});
 
@@ -116,6 +134,11 @@ export class LiveRunPanel {
 
   useControl(control: RunControl) {
     this.controlUsed.emit(control);
+  }
+
+  openChecklist() {
+    const run = this.live();
+    if (run) this.checklistOpened.update((ids) => new Set([...ids, run.id]));
   }
 
   answerOf(item: ChecklistItem) {

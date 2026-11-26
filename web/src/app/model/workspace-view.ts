@@ -117,12 +117,21 @@ export interface CatalogItem {
   scenario: Scenario;
   status: string;
   tone: StatusTone;
+  /** Only tests with a run or without support get a chip, so the few results stand out. */
+  chip: boolean;
+}
+
+export interface CatalogSection {
+  name: string;
+  items: CatalogItem[];
+  /** "3/11": tests of the section with a finished run, of those this instance supports. */
+  count: string;
 }
 
 /** The catalog, grouped by section, filtered by search text (ID, name, tags) and tag. */
 export function catalogSections(scenarios: Scenario[], runs: LiveRun[], query: string, tag: string) {
   const text = query.trim().toLowerCase();
-  const sections: { name: string; items: CatalogItem[] }[] = [];
+  const sections: CatalogSection[] = [];
   for (const scenario of scenarios) {
     if (tag && !scenario.tags.includes(tag)) continue;
     if (text && !`${scenario.id} ${scenario.label} ${scenario.tags.join(' ')}`.toLowerCase().includes(text)) continue;
@@ -131,12 +140,23 @@ export function catalogSections(scenarios: Scenario[], runs: LiveRun[], query: s
       scenario,
       status: scenario.availability === 'ready' ? statusText(run) : 'unsupported',
       tone: statusTone(scenario, run),
+      chip: scenario.availability !== 'ready' || !!run,
     };
     const section = sections.find((s) => s.name === scenario.section);
     if (section) section.items.push(item);
-    else sections.push({ name: scenario.section, items: [item] });
+    else sections.push({ name: scenario.section, items: [item], count: '' });
+  }
+  for (const section of sections) {
+    const ready = section.items.filter((i) => i.scenario.availability === 'ready');
+    const done = ready.filter((i) => latestRun(runs, i.scenario.id)?.completed).length;
+    section.count = `${done}/${ready.length}`;
   }
   return sections;
+}
+
+/** The selected test's header chips: test ID, protocol profile, then its tags. */
+export function scenarioChips(scenario: Scenario): string[] {
+  return [scenario.profile, ...scenario.tags];
 }
 
 export const tagsOf = (scenarios: Scenario[]) =>

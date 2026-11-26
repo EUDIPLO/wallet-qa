@@ -18,13 +18,14 @@ import { Api, ApiError, LAST_WORKSPACE_KEY, activeRunKey, errorText, storage } f
 import { E2E } from '../e2e';
 import {
   LiveRun,
-  NO_DC_API_TEXT,
+  DC_API_ELSEWHERE_TEXT,
   RunControl,
   SyncState,
   credentialRequest,
   dcApiErrorText,
   dcApiRequest,
   dcApiResponseBody,
+  hasDcApi,
 } from '../model/run-view';
 import {
   PUBLISH_WARNING,
@@ -34,6 +35,7 @@ import {
   publishErrorText,
   publishedText,
   runLine,
+  scenarioChips,
   workspaceBody,
   workspaceForm,
   workspaceSummary,
@@ -89,6 +91,15 @@ export class WorkspacePage implements OnInit {
   readonly dcApiBusy = signal(false);
 
   readonly selected = computed(() => this.scenarios().find((s) => s.id === this.selectedId()));
+  readonly chips = computed(() => {
+    const test = this.selected();
+    return test ? scenarioChips(test) : [];
+  });
+  /** While a run waits for the wallet, a phone shows the live run above the test card. */
+  readonly runActive = computed(() => {
+    const run = this.live();
+    return !!run && !run.completed;
+  });
   readonly summary = computed(() => {
     const workspace = this.workspace();
     return workspace ? workspaceSummary(workspace) : '';
@@ -157,6 +168,9 @@ export class WorkspacePage implements OnInit {
     await this.loadRuns().catch(() => undefined);
     this.activeRunId = this.run() ?? storage.get(activeRunKey(this.workspaceId())) ?? undefined;
     if (this.activeRunId) await this.refreshActiveRun();
+    // A restored run decides the selected test, unless the link asked for another one.
+    const restored = this.live();
+    if (restored && !this.scenario()) this.followRun(restored);
     // Back from the wallet (?run=): show the result.
     if (this.run() && this.live()) this.reveal('liveRun');
   }
@@ -172,6 +186,11 @@ export class WorkspacePage implements OnInit {
   choose(id: string) {
     this.selectedId.set(id);
     this.reveal('test-detail');
+  }
+
+  /** On a phone the catalog is below the live run; the test card links to it. */
+  changeTest() {
+    this.reveal('catalog');
   }
 
   // ------------------------------------------------------------------ workspace
@@ -218,6 +237,12 @@ export class WorkspacePage implements OnInit {
     this.activeRunId = run.id;
     storage.set(activeRunKey(this.workspaceId()), run.id);
     this.show(run);
+    this.followRun(run);
+  }
+
+  /** The selected test is the shown run's test, so the card above the live run matches it. */
+  private followRun(run: LiveRun) {
+    if (this.scenarios().some((s) => s.id === run.scenarioId)) this.selectedId.set(run.scenarioId);
   }
 
   private show(run: LiveRun) {
@@ -283,16 +308,15 @@ export class WorkspacePage implements OnInit {
     const run = this.live();
     const dcApi = run && dcApiRequest(run);
     if (!run || !dcApi || this.dcApiBusy()) return;
-    const credentials = navigator.credentials as CredentialsContainer | undefined;
-    if (!('DigitalCredential' in window) || !credentials?.get) {
-      this.message.set(NO_DC_API_TEXT);
+    if (!hasDcApi(window)) {
+      this.message.set(DC_API_ELSEWHERE_TEXT);
       return;
     }
     this.dcApiBusy.set(true);
     try {
       let credential: unknown;
       try {
-        credential = await credentials.get(credentialRequest(dcApi) as CredentialRequestOptions);
+        credential = await navigator.credentials.get(credentialRequest(dcApi) as CredentialRequestOptions);
       } catch (error) {
         this.message.set(dcApiErrorText(error));
         return;
