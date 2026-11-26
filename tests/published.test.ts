@@ -245,9 +245,9 @@ test('API: publish, public feed, upload and removal with the admin token', async
     assert.equal((await fetch(`${base}/v1/published/${record.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${ADMIN}` } })).status, 404);
     assert.equal((await (await fetch(`${base}/v1/published`)).json()).results.length, 1);
 
-    const page = await fetch(`${base}/results`);
-    assert.equal(page.status, 200);
-    assert.match(await page.text(), /Wallet QA results/);
+    // The results page is the Angular app (served at /results, tests/web.test.ts); without a
+    // built page it says so, while the feed above keeps working.
+    assert.equal((await fetch(`${base}/results`)).status, 503);
   } finally {
     await close();
   }

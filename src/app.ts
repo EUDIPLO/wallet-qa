@@ -76,6 +76,8 @@ export function createApp(
     published?: PublishedStore;
     /** Bearer token that may remove published results; without it removal is off. */
     adminToken?: string;
+    /** The built page (dist/web/browser); without it / and /w/<id> answer 503. */
+    webDir?: string;
   },
 ) {
   const published = () => {
@@ -381,7 +383,12 @@ export function createApp(
         await QRCode.toString(value, { type: 'svg', margin: 1, width: 260 }),
       );
   });
-  app.use(express.static(options.publicDir));
+  // The page is the Angular app in web/ (built to dist/web/browser). Its bundle is served under
+  // /web/ (deployUrl in web/angular.json), so a hosted proxy can open the bundle for the public
+  // results page with one path prefix. public/ keeps the trust files.
+  const webDir = options.webDir;
+  if (webDir) app.use('/web', express.static(webDir, { index: false }));
+  app.use(express.static(options.publicDir, { index: false }));
   // Same-device return after a presentation (EUDIPLO redirectUri with {sessionId}).
   app.get('/r/:sessionId', async (req, res) => {
     const run = await engine.redirectReceived(String(req.params.sessionId));
@@ -390,13 +397,14 @@ export function createApp(
       run ? `/w/${encodeURIComponent(run.owner)}?run=${run.id}` : '/',
     );
   });
-  app.get('/results', (_req, res) =>
-    res.sendFile(path.join(options.publicDir, 'results.html')),
-  );
-  // The page reads the workspace from the path: /w/<workspace id>.
-  app.get(['/', '/w/:ws'], (_req, res) =>
-    res.sendFile(path.join(options.publicDir, 'index.html')),
-  );
+  // The page reads the workspace from the path: /w/<workspace id>. Its routes are client-side.
+  // /start creates or joins a workspace. /results is the public results page, reading only
+  // GET /v1/published.
+  app.get(['/', '/start', '/w/:ws', '/results'], (_req, res) => {
+    if (!webDir)
+      throw new ApiError(503, 'The page is not built; run pnpm build');
+    res.sendFile(path.join(webDir, 'index.html'));
+  });
   app.use((_req, _res) => {
     throw new ApiError(404, 'Not found');
   });

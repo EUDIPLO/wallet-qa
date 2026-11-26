@@ -912,7 +912,7 @@ const entries: Entry[] = [
     section: 'Presentation',
     label: 'Digital Credentials API: PID (dc+sd-jwt) age over 18',
     description:
-      'The page calls navigator.credentials.get with a signed OpenID4VP request (openid4vp-v1-signed, response mode dc_api.jwt) bound to this page\'s origin. Only age_equal_or_over.18 may be disclosed. Works with the QA PID and the PID provider’s PID.',
+      'The browser asks the wallet for the PID\'s age over 18, without a QR code or link. The wallet may share only that attribute. Works with the QA PID and the PID provider’s PID. (Signed OpenID4VP request over navigator.credentials.get, response mode dc_api.jwt, bound to this page\'s origin.)',
     profile: 'oid4vp-1.0',
     tags: ['pid', 'dc+sd-jwt', 'dc-api', 'positive', 'selective-disclosure'],
     prerequisites: [...DC_API_PREREQS, 'A PID (dc+sd-jwt) is in the wallet.'],
@@ -935,7 +935,7 @@ const entries: Entry[] = [
     section: 'Presentation',
     label: 'Digital Credentials API: QA PID (mso_mdoc) age over 18',
     description:
-      'The page calls navigator.credentials.get with a signed OpenID4VP request (openid4vp-v1-signed, response mode dc_api.jwt) bound to this page\'s origin. Only age_over_18 may be disclosed; birth_date must stay hidden.',
+      'The browser asks the wallet for the QA PID\'s age over 18, without a QR code or link. The wallet may share only that attribute; the birth date must stay hidden. (Signed OpenID4VP request over navigator.credentials.get, response mode dc_api.jwt, bound to this page\'s origin.)',
     profile: 'oid4vp-1.0',
     tags: ['pid', 'mso_mdoc', 'dc-api', 'positive', 'selective-disclosure'],
     prerequisites: [...DC_API_PREREQS, 'The QA PID (mso_mdoc) is in the wallet.'],
