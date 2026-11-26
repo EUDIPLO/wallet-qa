@@ -164,12 +164,40 @@ export function createApp(
       res.status(201).location('/v1/published').json(result);
     },
   );
-  app.use(express.json({ limit: '64kb' }));
   const lookup = async (req: Request) => {
     const id = String(req.params.id);
     if (!uuid.test(id)) throw new ApiError(404, 'Run not found');
     return engine.lookup(id);
   };
+  // Registered before the 64 kB JSON limit below: a presentation can be larger.
+  // What navigator.credentials.get returned on the page for a dc-api step: the
+  // wallet's encrypted response, or its OAuth error.
+  app.post(
+    '/v1/runs/:id/dc-api/response',
+    express.json({ limit: '1mb' }),
+    async (req, res) => {
+      const run = await lookup(req);
+      if (!object(req.body)) throw new ApiError(400, 'Expected a JSON object');
+      const { response, error } = req.body;
+      if (typeof response === 'string' && response && response.length <= 1048576)
+        res.json(liveRun(await engine.dcApiResponse(run.id, { response })));
+      else if (typeof error === 'string' && /^[a-zA-Z0-9_]{1,64}$/.test(error))
+        res.json(
+          liveRun(
+            await engine.dcApiResponse(run.id, {
+              error,
+              error_description: optionalText(
+                req.body.error_description,
+                'error_description',
+                500,
+              ),
+            }),
+          ),
+        );
+      else throw new ApiError(400, 'Expected response or error');
+    },
+  );
+  app.use(express.json({ limit: '64kb' }));
   app.get('/v1/environment', (_req, res) => {
     const file = path.join(options.publicDir, 'trust', 'trust.json');
     res.json({

@@ -11,12 +11,16 @@ import { createApp } from '../src/app.js';
 import { Engine, liveRun } from '../src/testing/engine.js';
 import type { Backend } from '../src/testing/eudiplo.js';
 import { FileRunStore } from '../src/testing/store.js';
-import type { SessionEvidence } from '../src/testing/types.js';
+import type { SessionEvidence, StepDefinition } from '../src/testing/types.js';
 import {
   answersToSend,
   awaitingWallet,
   badgeText,
   contractAttributes,
+  credentialRequest,
+  dcApiErrorText,
+  dcApiRequest,
+  dcApiResponseBody,
   qrValue,
   reasonText,
   stepText,
@@ -45,10 +49,13 @@ import { testWorkspaces, WS } from './helpers.js';
 
 class FakeBackend implements Backend {
   sessions = new Map<string, SessionEvidence>();
-  async start() {
+  async start(step: StepDefinition) {
     const sessionId = crypto.randomUUID();
     this.sessions.set(sessionId, { status: 'active' });
-    return { sessionId, uri: `openid-credential-offer://?credential_offer_uri=https%3A%2F%2Feudiplo.test%2F${sessionId}` };
+    const uri = `openid-credential-offer://?credential_offer_uri=https%3A%2F%2Feudiplo.test%2F${sessionId}`;
+    if (step.channel !== 'dc-api') return { sessionId, uri };
+    const payload = Buffer.from(JSON.stringify({ response_uri: 'https://eudiplo.test/presentations/1/oid4vp' })).toString('base64url');
+    return { sessionId, uri, dcApi: { request: `e30.${payload}.c2ln` } };
   }
   async session(id: string) { return structuredClone(this.sessions.get(id)!); }
   async deleteSession(id: string) { this.sessions.delete(id); }
@@ -143,6 +150,43 @@ test('page: Open wallet only navigates to wallet hand-off schemes', () => {
     assert.equal(walletLink(run(uri)), uri);
   for (const uri of ['javascript:alert(1)', 'http://wallet.test/x', 'not a url'])
     assert.equal(walletLink(run(uri)), undefined, uri);
+});
+
+test('page: a Digital Credentials API step has no link or QR code, only the request for the browser', () => {
+  const dcApi = { protocol: 'openid4vp-v1-signed', request: 'signed.request.jwt' };
+  const live = {
+    id: 'run-1', completed: false, state: 'awaiting_wallet',
+    currentStep: { id: 'present', state: 'awaiting_wallet', instruction: null, interaction: { uri: null, crossDeviceUri: null, transactionCode: null, dcApi } },
+  } as unknown as LiveRun;
+  assert.equal(awaitingWallet(live), true);
+  assert.deepEqual(dcApiRequest(live), dcApi);
+  assert.equal(walletLink(live), undefined);
+  assert.equal(qrValue(live), undefined);
+  assert.deepEqual(credentialRequest(dcApi), {
+    mediation: 'required',
+    digital: { requests: [{ protocol: 'openid4vp-v1-signed', data: { request: 'signed.request.jwt' } }] },
+  });
+  assert.equal(dcApiRequest({ ...live, completed: true }), undefined);
+});
+
+test('page: what the Digital Credentials API returned is posted as a response or a wallet error', () => {
+  assert.deepEqual(dcApiResponseBody({ protocol: 'openid4vp-v1-signed', data: { response: 'encrypted.jwe' } }), { response: 'encrypted.jwe' });
+  // Older implementations return the data as a JSON string.
+  assert.deepEqual(dcApiResponseBody({ data: JSON.stringify({ error: 'access_denied' }) }), { error: 'access_denied' });
+  assert.equal(dcApiResponseBody({ data: { error_description: 'no error code' } }), undefined);
+  assert.equal(dcApiResponseBody({ data: 'not json' }), undefined);
+  assert.equal(dcApiResponseBody(null), undefined);
+  assert.match(dcApiErrorText(Object.assign(new Error('dismissed'), { name: 'NotAllowedError' })), /cancelled or no wallet/);
+  assert.equal(dcApiErrorText(new Error('boom')), 'Digital Credentials API: boom');
+});
+
+test('page: the dc-api steps of P-DCAPI-* reach the page as a request, not a link', async () => {
+  const { engine, store } = await setup();
+  const { run } = await engine.create({ workspaceId: WS, scenarioId: 'P-DCAPI-SDJWT' });
+  const live = view((await store.get(run.id))!);
+  assert.equal(live.currentStep.interaction.uri, null);
+  assert.equal(dcApiRequest(live)?.protocol, 'openid4vp-v1-signed');
+  assert.equal(walletLink(live), undefined);
 });
 
 test('page: only answered checklist items are sent, without empty notes', () => {

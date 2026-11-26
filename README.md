@@ -208,6 +208,7 @@ stable contract so Maestro, XCUITest, Espresso or Playwright can drive it:
   | `test-label`, `test-id`, `test-description`, `start-run` | Selected test, Start run |
   | `verdict` | `Status: …` / `Verdict: …` |
   | `open-wallet`, `tx-code`, `qr`, `wallet-uri` | Open wallet, `Transaction code: …`, QR code, link |
+  | `dc-api-button` | `Request with Digital Credentials API`, shown instead of Open wallet, QR code and link on the `P-DCAPI-*` tests |
   | `run-id`, `scenario-id`, `reason`, `step`, `instruction` | Run details |
   | `checklist-q-<id>`, `checklist-q-<id>-yes`, `-no`, `-note`, `save-answers` | Checklist |
   | `control-<id>` | Run controls (revoke, suspend) |
@@ -262,7 +263,7 @@ pnpm smoke                        # creates and deletes one EUDIPLO session per 
   validates its own access certificate before signing and refuses both, so these need a
   switch in EUDIPLO or a request signed by Wallet QA itself.
 - Fixtures: registration certificates (`R-REG-*`), wallet attestation tenant (`I-WIA`),
-  deferred issuance webhook (`I-DEFERRED`), DC API and transaction data tests.
+  deferred issuance webhook (`I-DEFERRED`), Annex C and transaction data tests.
 - Maestro flows on top of `WalletQaClient` and the page contract.
 
 ## EUDIPLO notes

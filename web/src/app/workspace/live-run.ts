@@ -16,6 +16,7 @@ import {
   awaitingWallet,
   badgeText,
   contractAttributes,
+  dcApiRequest,
   qrValue,
   reasonText,
   stepText,
@@ -27,7 +28,8 @@ import {
 export type Answers = ReturnType<typeof answersToSend>;
 
 /**
- * The live run: status badge, wallet hand-off (Open wallet, transaction code, QR code), run
+ * The live run: status badge, wallet hand-off (Open wallet, transaction code, QR code, or the
+ * Digital Credentials API button), run
  * controls, checklist and evidence. The workspace page owns the run and its polling; this panel
  * shows it and keeps unsaved checklist answers.
  */
@@ -55,7 +57,11 @@ export class LiveRunPanel {
   readonly saving = input(false);
   readonly pendingControls = input<ReadonlySet<string>>(new Set());
 
+  readonly dcApiBusy = input(false);
+
   readonly openWalletClicked = output<string>();
+  /** The Digital Credentials API button: the handler must call navigator.credentials.get right away. */
+  readonly dcApiClicked = output<void>();
   readonly controlUsed = output<RunControl>();
   readonly answersSaved = output<Answers>();
   readonly auditRequested = output<void>();
@@ -70,6 +76,11 @@ export class LiveRunPanel {
   readonly awaiting = computed(() => {
     const run = this.live();
     return !!run && awaitingWallet(run);
+  });
+  /** Set on a dc-api step: the browser hands the request over, there is no link or QR code. */
+  readonly dcApi = computed(() => {
+    const run = this.live();
+    return run ? dcApiRequest(run) : undefined;
   });
   readonly walletUri = computed(() => {
     const run = this.live();
@@ -97,6 +108,10 @@ export class LiveRunPanel {
   openWallet() {
     const uri = this.walletUri();
     if (uri) this.openWalletClicked.emit(uri);
+  }
+
+  requestDcApi() {
+    if (this.dcApi()) this.dcApiClicked.emit();
   }
 
   useControl(control: RunControl) {

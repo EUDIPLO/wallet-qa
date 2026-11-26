@@ -35,6 +35,20 @@
           @if (instruction()) {
             <p class="instruction" id="instruction" data-testid="instruction">{{ instruction() }}</p>
           }
+          @if (dcApi()) {
+            <!-- No QR code or link: the browser offers the wallet in its own dialog. -->
+            <button
+              matButton="filled"
+              type="button"
+              id="dc-api-button"
+              class="big full"
+              data-testid="dc-api-button"
+              [disabled]="dcApiBusy()"
+              (click)="requestDcApi()"
+            >
+              Request with Digital Credentials API
+            </button>
+          } @else {
           <!-- One tap opens the wallet: no menu or dialog in between. -->
           <button
             matButton="filled"
@@ -73,6 +87,7 @@
               [value]="run.currentStep.interaction.uri"
             ></textarea>
           </mat-expansion-panel>
+          }
         </div>
       }
 

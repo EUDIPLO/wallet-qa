@@ -48,12 +48,24 @@ export interface LiveRun {
     id: string;
     state: string;
     instruction: string | null;
-    interaction: { uri: string | null; crossDeviceUri: string | null; transactionCode: string | null };
+    interaction: {
+      uri: string | null;
+      crossDeviceUri: string | null;
+      transactionCode: string | null;
+      /** Set instead of uri on a dc-api step: the page passes it to navigator.credentials.get. */
+      dcApi?: DcApiRequest | null;
+    };
   };
   checklist: ChecklistItem[];
   controls: RunControl[];
   assertions: RunAssertion[];
   createdAt: string;
+}
+
+/** A dc-api step's request, as GET /v1/runs/:id returns it. */
+export interface DcApiRequest {
+  protocol: string;
+  request: string;
 }
 
 /** The value of #liveRun's data-sync: idle before the first load, then the state of the last poll. */
@@ -85,15 +97,72 @@ export function stepText(run: LiveRun): string {
   return `Step ${run.currentStep.id}: ${words(run.currentStep.state)}`;
 }
 
-/** True while the wallet has to act on the current step: show QR, link and Open wallet. */
+/**
+ * True while the wallet has to act on the current step: show QR, link and Open wallet, or on a
+ * dc-api step the Digital Credentials API button.
+ */
 export function awaitingWallet(run: LiveRun): boolean {
-  return !run.completed && run.currentStep.state === 'awaiting_wallet' && !!run.currentStep.interaction.uri;
+  const { uri, dcApi } = run.currentStep.interaction;
+  return !run.completed && run.currentStep.state === 'awaiting_wallet' && !!(uri || dcApi);
 }
+
+/** The request for navigator.credentials.get while a dc-api step waits for the wallet. */
+export function dcApiRequest(run: LiveRun): DcApiRequest | undefined {
+  return (awaitingWallet(run) && run.currentStep.interaction.dcApi) || undefined;
+}
+
+/** The argument of navigator.credentials.get for a dc-api step. Must be called from a user gesture. */
+export function credentialRequest(dcApi: DcApiRequest) {
+  return {
+    mediation: 'required' as const,
+    digital: { requests: [{ protocol: dcApi.protocol, data: { request: dcApi.request } }] },
+  };
+}
+
+/** The body of POST /v1/runs/:id/dc-api/response: the wallet's response or its OAuth error. */
+export type DcApiResponseBody = { response: string } | { error: string; error_description?: string };
+
+/**
+ * What to post from the credential navigator.credentials.get returned, or undefined when it holds
+ * no OpenID4VP response. Older implementations return the data as a JSON string.
+ */
+export function dcApiResponseBody(credential: unknown): DcApiResponseBody | undefined {
+  let data = (credential as { data?: unknown } | null | undefined)?.data;
+  if (typeof data === 'string') {
+    try {
+      data = JSON.parse(data);
+    } catch {
+      return undefined;
+    }
+  }
+  const value = data as { response?: unknown; error?: unknown; error_description?: unknown } | undefined;
+  if (typeof value?.response === 'string') return { response: value.response };
+  if (typeof value?.error === 'string')
+    return {
+      error: value.error,
+      ...(typeof value.error_description === 'string'
+        ? { error_description: value.error_description.slice(0, 500) }
+        : {}),
+    };
+  return undefined;
+}
+
+/** The status message after navigator.credentials.get failed. */
+export function dcApiErrorText(error: unknown): string {
+  // NotAllowedError: the request was dismissed, or no wallet on the device can answer it.
+  if ((error as { name?: unknown } | null)?.name === 'NotAllowedError')
+    return 'No credential was returned: the request was cancelled or no wallet could answer it.';
+  return `Digital Credentials API: ${error instanceof Error ? error.message : String(error)}`;
+}
+
+export const NO_DC_API_TEXT =
+  'This browser has no Digital Credentials API. Use a browser that supports it, such as a current Chrome.';
 
 /** The URI the Open wallet button navigates to, or undefined when it must stay disabled. */
 export function walletLink(run: LiveRun): string | undefined {
   if (!awaitingWallet(run)) return undefined;
-  const uri = run.currentStep.interaction.uri!;
+  const uri = run.currentStep.interaction.uri;
+  if (!uri) return undefined;
   try {
     return WALLET_SCHEMES.includes(new URL(uri).protocol) ? uri : undefined;
   } catch {

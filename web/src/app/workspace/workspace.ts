@@ -16,7 +16,16 @@ import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { Api, ApiError, LAST_WORKSPACE_KEY, activeRunKey, errorText, storage } from '../api';
 import { E2E } from '../e2e';
-import { LiveRun, RunControl, SyncState } from '../model/run-view';
+import {
+  LiveRun,
+  NO_DC_API_TEXT,
+  RunControl,
+  SyncState,
+  credentialRequest,
+  dcApiErrorText,
+  dcApiRequest,
+  dcApiResponseBody,
+} from '../model/run-view';
 import {
   PUBLISH_WARNING,
   Scenario,
@@ -77,6 +86,7 @@ export class WorkspacePage implements OnInit {
   readonly starting = signal(false);
   readonly saving = signal(false);
   readonly pendingControls = signal<ReadonlySet<string>>(new Set());
+  readonly dcApiBusy = signal(false);
 
   readonly selected = computed(() => this.scenarios().find((s) => s.id === this.selectedId()));
   readonly summary = computed(() => {
@@ -263,6 +273,43 @@ export class WorkspacePage implements OnInit {
   openWallet(uri: string) {
     // selectRun has already stored the run ID, so the page finds the run again after the wallet.
     window.location.assign(uri);
+  }
+
+  /**
+   * Hands a dc-api step's request to the wallet through the browser and posts what came back.
+   * Runs from the button press: navigator.credentials.get needs a user gesture.
+   */
+  async requestDcApi() {
+    const run = this.live();
+    const dcApi = run && dcApiRequest(run);
+    if (!run || !dcApi || this.dcApiBusy()) return;
+    const credentials = navigator.credentials as CredentialsContainer | undefined;
+    if (!('DigitalCredential' in window) || !credentials?.get) {
+      this.message.set(NO_DC_API_TEXT);
+      return;
+    }
+    this.dcApiBusy.set(true);
+    try {
+      let credential: unknown;
+      try {
+        credential = await credentials.get(credentialRequest(dcApi) as CredentialRequestOptions);
+      } catch (error) {
+        this.message.set(dcApiErrorText(error));
+        return;
+      }
+      const body = dcApiResponseBody(credential);
+      if (!body) {
+        this.message.set('The wallet returned no OpenID4VP response.');
+        return;
+      }
+      const updated = await this.api.post<LiveRun>(`/runs/${encodeURIComponent(run.id)}/dc-api/response`, body);
+      if (this.activeRunId === run.id) this.show(updated);
+      this.message.set('error' in body ? `The wallet answered with the error ${body.error}.` : 'Wallet response sent to the verifier.');
+    } catch (error) {
+      this.message.set(errorText(error));
+    } finally {
+      this.dcApiBusy.set(false);
+    }
   }
 
   async useControl(control: RunControl) {
