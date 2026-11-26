@@ -13,10 +13,6 @@ import { WorkspaceFormValue } from '../model/workspace-view';
     <form id="workspace-form" data-testid="workspace-form" (submit)="$event.preventDefault(); submit()">
       <div class="fields">
         <mat-form-field appearance="outline">
-          <mat-label>Your name (optional)</mat-label>
-          <input matInput id="tester" data-testid="tester" autocomplete="name" [value]="form().tester" (input)="set('tester', $event)" />
-        </mat-form-field>
-        <mat-form-field appearance="outline">
           <mat-label>Wallet</mat-label>
           <input matInput id="wallet-name" data-testid="wallet-name" required [value]="form().name" (input)="set('name', $event)" />
         </mat-form-field>
@@ -36,6 +32,10 @@ import { WorkspaceFormValue } from '../model/workspace-view';
         <mat-form-field appearance="outline">
           <mat-label>Device (optional)</mat-label>
           <input matInput id="wallet-device" data-testid="wallet-device" placeholder="e.g. Pixel 8, Android 16" [value]="form().device" (input)="set('device', $event)" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Your name (optional)</mat-label>
+          <input matInput id="tester" data-testid="tester" autocomplete="name" [value]="form().tester" (input)="set('tester', $event)" />
         </mat-form-field>
       </div>
       <div class="actions">

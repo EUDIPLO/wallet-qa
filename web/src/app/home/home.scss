@@ -1,7 +1,7 @@
 @use '@angular/material' as mat;
 
 // The start page: what Wallet QA does (intro and run trace), what this instance tests, then the
-// forms. Phone first; from 960 px the intro and the forms get two columns.
+// forms. Phone first; from 960 px the intro and the start/join row get two columns.
 :host {
   display: flex;
   flex-direction: column;
@@ -231,23 +231,58 @@
   }
 }
 
-// The forms: create on the left, join and publish on the right.
-.forms {
+// Start (wide) and join (narrow) side by side; publishing sits at the bottom of the page.
+.start {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
 
-.side {
+.setup {
+  border-color: var(--mat-sys-primary);
+}
+
+.card [mat-card-subtitle] {
+  margin-top: 4px;
+  font: var(--mat-sys-body-medium);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.join-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  min-width: 0;
+  gap: 12px;
+}
+
+.more {
+  padding-top: 24px;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+
+  > h2 {
+    margin: 0 0 16px;
+    font: var(--mat-sys-title-large);
+  }
+
+  h3 {
+    margin: 0 0 4px;
+    font: var(--mat-sys-title-medium);
+  }
+
+  p {
+    margin: 0 0 12px;
+  }
+}
+
+.more-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
 }
 
 .card {
   mat-card-header {
+    flex-direction: column;
     padding: 16px 16px 0;
   }
 
@@ -327,7 +362,12 @@
     letter-spacing: -0.015em;
   }
 
-  .forms {
+  .start {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+
+  .more-grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 48px;
   }
 }
