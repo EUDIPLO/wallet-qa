@@ -10,6 +10,11 @@ export const routes: Routes = [
     title: 'Wallet QA',
   },
   {
+    path: 'start',
+    loadComponent: () => import('./start/start').then((m) => m.StartPage),
+    title: 'Start a test session · Wallet QA',
+  },
+  {
     path: 'w/:workspaceId',
     loadComponent: () => import('./workspace/workspace').then((m) => m.WorkspacePage),
     title: 'Wallet QA',

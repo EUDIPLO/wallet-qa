@@ -1,5 +1,3 @@
-<output id="message" class="message" aria-live="polite" data-testid="message">{{ message() }}</output>
-
 <section class="intro" id="intro" data-testid="intro" aria-labelledby="intro-heading">
   <div class="pitch">
     <h1 id="intro-heading">Test an EUDI wallet against a real issuer and verifier</h1>
@@ -8,19 +6,15 @@
       decides from what EUDIPLO recorded and what you saw in the wallet.
     </p>
     <div class="actions">
+      <a matButton="filled" class="big" routerLink="/start" queryParamsHandling="preserve" id="start-session" data-testid="start-session">
+        Start a test session
+      </a>
       @if (lastWorkspace()) {
-        <button matButton="filled" type="button" class="big" id="resume-workspace" data-testid="resume-workspace" (click)="resume()">
+        <button matButton="outlined" type="button" class="big" id="resume-workspace" data-testid="resume-workspace" (click)="resume()">
           Continue the last workspace
         </button>
-        <button matButton="outlined" type="button" class="big" id="start-session" data-testid="start-session" (click)="startSession()">
-          Start a new session
-        </button>
-      } @else {
-        <button matButton="filled" type="button" class="big" id="start-session" data-testid="start-session" (click)="startSession()">
-          Start a test session
-        </button>
-        <a matButton class="big" routerLink="/results" id="intro-results" data-testid="intro-results">See published results</a>
       }
+      <a matButton class="big" routerLink="/results" id="intro-results" data-testid="intro-results">See published results</a>
     </div>
     <p class="why">
       A wallet has to work with every issuer and verifier it meets, not just the one its team builds against. Each
@@ -46,38 +40,6 @@
   </ol>
 </section>
 
-<!-- Starting a session is what most visitors came for; joining is the other way in. -->
-<section class="start" aria-label="Start or join a workspace">
-  <mat-card appearance="outlined" class="card setup" id="setup" data-testid="setup">
-    <mat-card-header>
-      <h2 mat-card-title>Start a test session</h2>
-      <p mat-card-subtitle>
-        A workspace groups your runs and the wallet build you test. Open its link on the phone and the laptop to see the
-        same runs on both.
-      </p>
-    </mat-card-header>
-    <mat-card-content>
-      <qa-workspace-form [value]="formValue" [busy]="busy()" (saved)="create($event)" />
-    </mat-card-content>
-  </mat-card>
-
-  <mat-card appearance="outlined" class="card join-card" id="join-existing" data-testid="join-existing">
-    <mat-card-header>
-      <h2 mat-card-title>Join a workspace</h2>
-      <p mat-card-subtitle>Already started on another device? Paste its link or scan its QR code.</p>
-    </mat-card-header>
-    <mat-card-content>
-      <form class="join-form" (submit)="$event.preventDefault(); join()">
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Workspace link or ID</mat-label>
-          <input matInput id="join-input" data-testid="join-input" placeholder="https://…/w/…" [value]="joinInput()" (input)="joinInput.set($any($event.target).value)" />
-        </mat-form-field>
-        <button matButton="outlined" type="submit" class="big" id="join-button" data-testid="join-button">Join</button>
-      </form>
-    </mat-card-content>
-  </mat-card>
-</section>
-
 @if (sections().length) {
   <section class="catalog" id="catalog-overview" data-testid="catalog-overview" aria-labelledby="catalog-heading">
     <div class="catalog-heading">
@@ -101,31 +63,12 @@
   </section>
 }
 
-<!-- For maintainers: publishing from elsewhere and this instance's trust setup. -->
-<section class="more" aria-labelledby="more-heading">
-  <h2 id="more-heading">Publishing and this instance</h2>
-  <div class="more-grid">
-    <div class="more-item" id="upload-report" data-testid="upload-report">
-      <h3>Publish a report from another instance</h3>
-      <p class="muted">
-        Upload a workspace JSON report (Reports → JSON) to the public <a routerLink="/results">results page</a>. It is
-        marked self-reported. Only the wallet, build, platform, device, versions and verdicts are published.
-      </p>
-      <div class="inline">
-        <label for="upload-file" class="visually-hidden">Workspace JSON report</label>
-        <input #file type="file" accept="application/json,.json" id="upload-file" data-testid="upload-file" class="file" (change)="chooseFile($event)" />
-        <button matButton="outlined" type="button" class="big" id="choose-file" data-testid="choose-file" (click)="file.click()">
-          Choose file
-        </button>
-        <span class="muted file-name" id="upload-file-name" data-testid="upload-file-name">{{ uploadFile()?.name ?? 'No file chosen' }}</span>
-        <button matButton="outlined" type="button" class="big" id="upload-button" data-testid="upload-button" [disabled]="!uploadFile()" (click)="upload()">
-          Publish as self-reported
-        </button>
-      </div>
-    </div>
-    <div class="more-item">
-      <h3>This instance</h3>
-      <qa-instance-info />
-    </div>
-  </div>
+<!-- The overview ends where a visitor decides: start, or look at published results. -->
+<section class="cta" id="cta" data-testid="cta">
+  <p>Ready to test a wallet build? A session takes a minute to set up.</p>
+  <a matButton="filled" class="big" routerLink="/start" queryParamsHandling="preserve" id="cta-start" data-testid="cta-start">
+    Start a test session
+  </a>
 </section>
+
+<qa-instance-info />

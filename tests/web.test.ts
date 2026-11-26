@@ -298,7 +298,7 @@ test('page: the instance trust setup and the publish messages', () => {
   assert.equal(publishErrorText(409, 'Already published'), 'Could not publish: Already published');
 });
 
-test('HTTP: the page is served at /, /w/<workspace> and /results, its bundle under /web/; trust and the API stay', async () => {
+test('HTTP: the page is served at /, /start, /w/<workspace> and /results, its bundle under /web/; trust and the API stay', async () => {
   const { engine } = await setup();
   const webDir = await mkdtemp(path.join(os.tmpdir(), 'wallet-qa-web-'));
   await writeFile(path.join(webDir, 'index.html'), '<qa-root></qa-root>');
@@ -311,7 +311,7 @@ test('HTTP: the page is served at /, /w/<workspace> and /results, its bundle und
   const withWeb = await listen(createApp(engine, { publicDir: path.resolve('public'), publicOrigin: 'http://localhost', webDir }));
   const without = await listen(createApp(engine, { publicDir: path.resolve('public'), publicOrigin: 'http://localhost' }));
   try {
-    for (const route of ['/', `/w/${WS}`, `/w/${WS}?scenario=I-EAA-NOTX&e2e=1`, '/results']) {
+    for (const route of ['/', '/start', '/start?e2e=1', `/w/${WS}`, `/w/${WS}?scenario=I-EAA-NOTX&e2e=1`, '/results']) {
       const response = await fetch(withWeb.base + route);
       assert.equal(response.status, 200, route);
       assert.equal(await response.text(), '<qa-root></qa-root>', route);

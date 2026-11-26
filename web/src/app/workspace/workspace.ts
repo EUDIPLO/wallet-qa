@@ -155,7 +155,7 @@ export class WorkspacePage implements OnInit {
         error instanceof ApiError && error.status === 404
           ? 'This workspace does not exist or has expired. Create a new one.'
           : `Could not load: ${errorText(error)}`;
-      await this.router.navigate(['/'], { queryParamsHandling: 'preserve', state: { message: text } });
+      await this.router.navigate(['/start'], { queryParamsHandling: 'preserve', state: { message: text } });
       return;
     }
     storage.set(LAST_WORKSPACE_KEY, this.workspaceId());

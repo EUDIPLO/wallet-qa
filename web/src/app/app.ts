@@ -12,6 +12,7 @@ import { RouterLink, RouterOutlet } from '@angular/router';
       <a class="brand" routerLink="/" queryParamsHandling="preserve" id="brand" data-testid="brand">Wallet QA</a>
       <span class="tagline">Pick a test, run it with the wallet, answer the checklist.</span>
       <span class="spacer"></span>
+      <a matButton routerLink="/start" queryParamsHandling="preserve" id="start-link" data-testid="start-link">Start</a>
       <a matButton routerLink="/results" id="results-link" data-testid="results-link">Results</a>
     </mat-toolbar>
     <main class="page">

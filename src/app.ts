@@ -398,8 +398,9 @@ export function createApp(
     );
   });
   // The page reads the workspace from the path: /w/<workspace id>. Its routes are client-side.
-  // /results is the public results page, reading only GET /v1/published.
-  app.get(['/', '/w/:ws', '/results'], (_req, res) => {
+  // /start creates or joins a workspace. /results is the public results page, reading only
+  // GET /v1/published.
+  app.get(['/', '/start', '/w/:ws', '/results'], (_req, res) => {
     if (!webDir)
       throw new ApiError(503, 'The page is not built; run pnpm build');
     res.sendFile(path.join(webDir, 'index.html'));

@@ -190,7 +190,7 @@ stable contract so Maestro, XCUITest, Espresso or Playwright can drive it:
   `Status: …` / `Verdict: …`.
 - On `#liveRun` the attributes `data-run-id`, `data-completed`, `data-passed`, `data-verdict`,
   `data-attested`, `data-sync`.
-- Links: `/w/<workspace>?scenario=<id>` preselects a test, `?run=<id>` shows a run,
+- Links: `/` is the overview, `/start` creates or joins a workspace, `/w/<workspace>?scenario=<id>` preselects a test, `?run=<id>` shows a run,
   `?timeoutSeconds=<n>` sets the run timeout.
 - `?e2e=1` switches off Material animations and ripples, CSS transitions and the progress bar.
 - Test hooks: every element a flow taps or reads has an `id` and a `data-testid` with the same
@@ -199,10 +199,11 @@ stable contract so Maestro, XCUITest, Espresso or Playwright can drive it:
 
   | Hook | Element |
   | --- | --- |
-  | `workspace-form`, `tester`, `wallet-name`, `wallet-version`, `wallet-platform`, `wallet-device`, `save-workspace` | Create or edit a workspace (platform is a native `<select>`) |
-  | `start-session`, `resume-workspace`, `intro-results`, `run-trace`, `catalog-overview`, `catalog-total`, `catalog-<section>` | Start page intro: start a session, continue the last workspace, the catalog at a glance |
-  | `join-input`, `join-button` | Join a workspace |
-  | `upload-file`, `choose-file`, `upload-button` | Publish a report from another instance |
+  | `start-session`, `resume-workspace`, `intro-results`, `run-trace`, `catalog-overview`, `catalog-total`, `catalog-<section>`, `cta-start` | Overview (`/`): links to `/start`, continue the last workspace, the catalog at a glance |
+  | `start-link`, `results-link` | Top bar links to `/start` and `/results` |
+  | `workspace-form`, `tester`, `wallet-name`, `wallet-version`, `wallet-platform`, `wallet-device`, `save-workspace` | Create (`/start`) or edit a workspace (platform is a native `<select>`) |
+  | `resume-workspace`, `join-input`, `join-button` | `/start`: continue the last workspace, join one by its link or ID |
+  | `upload-report`, `upload-file`, `choose-file`, `upload-button` | `/start`: publish a report from another instance (a folded panel; open `upload-report` first) |
   | `edit-workspace`, `join-toggle`, `join-link`, `join-qr` | Workspace bar, join on another device |
   | `search`, `tag-filter`, `test-<test id>`, `progress`, `section-<section>` | Catalog (the tag filter is a native `<select>`; `section-issuance` etc. fold a section) |
   | `test-label`, `test-id`, `test-tags`, `test-description`, `start-run`, `change-test` | Selected test, Start run, Change test (phone only: jumps to the catalog) |
@@ -216,7 +217,7 @@ stable contract so Maestro, XCUITest, Espresso or Playwright can drive it:
   | `evidence`, `audit`, `cancel-run` | Evidence, audit JSON, cancel |
   | `view-run-<run id>`, `report-junit`, `report-json`, `publish-results`, `confirm-ok`, `confirm-cancel` | Runs, reports, publishing |
   | `message`, `instance-info` | Status message, this instance's trust setup |
-  | `results-link`, `features`, `feature-<id>`, `wallet-filter`, `results`, `result-<id>` | Results page (`/results`; the wallet filter is a native `<select>`) |
+  | `features`, `feature-<id>`, `wallet-filter`, `results`, `result-<id>` | Results page (`/results`; the wallet filter is a native `<select>`) |
 
 The [Maestro flows](maestro/README.md) use the API instead of the page: they start a run,
 open its same-device link in the wallet, and wait for the verdict.
