@@ -30,17 +30,18 @@ class Element {
   }
 }
 
-async function page(options: { path?: string; search?: string; storage?: Map<string, string>; confirm?: boolean; backend: { runs: Run[]; current?: Run; gone?: boolean; workspaceGone?: boolean } }) {
+async function page(options: { path?: string; search?: string; storage?: Map<string, string>; confirm?: boolean; /** What the fake navigator.credentials.get resolves with; unset: the browser has no Digital Credentials API. */ dcApi?: () => Promise<unknown>; backend: { runs: Run[]; current?: Run; gone?: boolean; workspaceGone?: boolean } }) {
   const storage = options.storage ?? new Map<string, string>();
   const elements = new Map([...html.matchAll(/id="([^"]+)"/g)].map((match) => [match[1], new Element()]));
   const events: Record<string, () => void> = {};
   const requests: { url: string; method: string; body?: unknown }[] = [];
   const navigation: string[] = [];
+  const credentialRequests: unknown[] = [];
   const document = { visibilityState: 'visible', getElementById: (id: string) => elements.get(id), createElement: () => new Element(), addEventListener: (event: string, fn: () => void) => { events[event] = fn; } };
   const { backend } = options;
   const context = vm.createContext({
     document,
-    window: { confirm: () => options.confirm ?? true, addEventListener: document.addEventListener, location: { assign: (uri: string) => navigation.push(uri), search: options.search ?? '', pathname: options.path ?? `/w/${WS}`, origin: 'https://qa.test' } },
+    window: { ...(options.dcApi ? { DigitalCredential: class {}, navigator: { credentials: { get: async (request: unknown) => { credentialRequests.push(request); return options.dcApi!(); } } } } : {}), confirm: () => options.confirm ?? true, addEventListener: document.addEventListener, location: { assign: (uri: string) => navigation.push(uri), search: options.search ?? '', pathname: options.path ?? `/w/${WS}`, origin: 'https://qa.test' } },
     localStorage: { getItem: (k: string) => storage.get(k) ?? null, setItem: (k: string, v: string) => storage.set(k, v), removeItem: (k: string) => storage.delete(k) },
     fetch: async (url: string, init: RequestInit = {}) => {
       const method = init.method ?? 'GET';
@@ -65,6 +66,8 @@ async function page(options: { path?: string; search?: string; storage?: Map<str
         if (method === 'POST') { backend.current = run(); backend.runs.unshift(backend.current); return Response.json(backend.current, { status: 201 }); }
         return Response.json({ runs: backend.runs });
       }
+      const dcApi = /^\/v1\/runs\/([^/]+)\/dc-api\/response$/.exec(url);
+      if (dcApi && method === 'POST') return Response.json(run(null, dcApi[1], { state: 'awaiting_tester', awaitingTester: true }));
       const match = /^\/v1\/runs\/([^/]+)(\/answers)?$/.exec(url);
       if (match) {
         if (backend.gone) return Response.json({ error: { message: 'Run not found' } }, { status: 404 });
@@ -79,7 +82,7 @@ async function page(options: { path?: string; search?: string; storage?: Map<str
   vm.runInContext(source, context);
   const settle = async () => { for (let i = 0; i < 10; i++) await new Promise((resolve) => setImmediate(resolve)); };
   await settle();
-  return { el: (id: string) => elements.get(id)!, events, requests, navigation, storage, settle };
+  return { el: (id: string) => elements.get(id)!, events, requests, navigation, credentialRequests, storage, settle };
 }
 
 test('without a workspace the setup form creates one and opens its link', async () => {
@@ -208,4 +211,40 @@ test('the upload box is hidden while editing a workspace', async () => {
   const view = await page({ backend: { runs: [] } });
   await view.el('editWorkspace').onclick!(); await view.settle();
   assert.equal(view.el('uploadReport').hidden, true);
+});
+
+function dcApiRun() {
+  const waiting = run(null, 'run-1');
+  waiting.currentStep.interaction = { uri: null, crossDeviceUri: null, transactionCode: null, dcApi: { protocol: 'openid4vp-v1-signed', request: 'signed.request.jwt' } } as never;
+  return waiting;
+}
+test('a Digital Credentials API step asks the browser for the credential and posts the wallet response', async () => {
+  const browser = await page({ search: '?run=run-1', backend: { runs: [dcApiRun()] }, dcApi: async () => ({ protocol: 'openid4vp-v1-signed', data: { response: 'encrypted.jwe' } }) });
+  assert.equal(browser.el('interaction').hidden, false);
+  assert.equal(browser.el('dcApiButton').hidden, false);
+  for (const id of ['qr', 'openWallet', 'uriBox']) assert.equal(browser.el(id).hidden, true, id);
+  await browser.el('dcApiButton').onclick!(); await browser.settle();
+  // The request object is created inside the page's VM context.
+  assert.deepEqual(JSON.parse(JSON.stringify(browser.credentialRequests)), [{ mediation: 'required', digital: { requests: [{ protocol: 'openid4vp-v1-signed', data: { request: 'signed.request.jwt' } }] } }]);
+  assert.deepEqual(browser.requests.find((r) => r.url === '/v1/runs/run-1/dc-api/response')!.body, { response: 'encrypted.jwe' });
+  assert.equal(browser.el('verdict').textContent, 'Status: awaiting tester');
+  assert.equal(browser.navigation.length, 0);
+});
+test('a wallet error from the Digital Credentials API is passed on; a cancelled request is not', async () => {
+  const refused = await page({ search: '?run=run-1', backend: { runs: [dcApiRun()] }, dcApi: async () => ({ data: JSON.stringify({ error: 'access_denied' }) }) });
+  await refused.el('dcApiButton').onclick!(); await refused.settle();
+  assert.deepEqual(refused.requests.find((r) => r.url === '/v1/runs/run-1/dc-api/response')!.body, { error: 'access_denied' });
+  const cancelled = await page({ search: '?run=run-1', backend: { runs: [dcApiRun()] }, dcApi: async () => { throw Object.assign(new Error('dismissed'), { name: 'NotAllowedError' }); } });
+  await cancelled.el('dcApiButton').onclick!(); await cancelled.settle();
+  assert.equal(cancelled.requests.some((r) => r.url.endsWith('/dc-api/response')), false);
+  assert.match(cancelled.el('message').textContent, /cancelled or no wallet/);
+  assert.equal(cancelled.el('dcApiButton').disabled, false);
+});
+test('a browser without the Digital Credentials API says so; other steps keep the QR code and link', async () => {
+  const browser = await page({ search: '?run=run-1', backend: { runs: [dcApiRun()] } });
+  await browser.el('dcApiButton').onclick!(); await browser.settle();
+  assert.match(browser.el('message').textContent, /no Digital Credentials API/);
+  const plain = await page({ search: '?run=run-1', backend: { runs: [run()] } });
+  assert.equal(plain.el('dcApiButton').hidden, true);
+  for (const id of ['qr', 'openWallet', 'uriBox']) assert.equal(plain.el(id).hidden, false, id);
 });

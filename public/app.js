@@ -15,7 +15,7 @@ const lastWorkspaceKey = 'walletqa.lastWorkspace';
 const activeRunKey = `walletqa.activeRun.${workspaceId ?? 'none'}`;
 
 let workspace; let scenarios = []; let selectedScenario; let runs = [];
-let activeRunId; let selectedRun; let walletUri; let busy = false;
+let activeRunId; let selectedRun; let walletUri; let busy = false; let dcApiBusy = false;
 const draftAnswers = {};
 
 const message = (value) => { el('message').textContent = value; };
@@ -207,8 +207,12 @@ function render(run) {
   el('step').textContent = `Step ${step.id}: ${step.state.replaceAll('_', ' ')}`;
   el('instruction').textContent = !run.completed && step.state === 'awaiting_wallet' ? step.instruction ?? '' : '';
   const uri = step.interaction.uri;
+  // A dc-api step has no link or QR code: the browser hands the request to the wallet.
+  const dcApi = step.interaction.dcApi;
   walletUri = undefined; el('openWallet').disabled = true;
-  el('interaction').hidden = !uri || run.completed || step.state !== 'awaiting_wallet';
+  el('interaction').hidden = !(uri || dcApi) || run.completed || step.state !== 'awaiting_wallet';
+  el('qr').hidden = !uri; el('openWallet').hidden = !uri; el('uriBox').hidden = !uri;
+  el('dcApiButton').hidden = !dcApi; el('dcApiButton').disabled = dcApiBusy;
   if (uri) {
     el('uri').value = uri;
     // Only recognized wallet handoff schemes can be navigated from the UI.
@@ -261,6 +265,34 @@ el('openWallet').onclick = () => {
   if (!walletUri || !selectedRun || selectedRun.completed) return;
   // selectRun has already persisted the ID before this explicit user gesture.
   window.location.assign(walletUri);
+};
+// Must run from the button press: navigator.credentials.get needs a user gesture.
+el('dcApiButton').onclick = async () => {
+  const run = selectedRun; const dcApi = run?.currentStep.interaction.dcApi;
+  if (!dcApi || run.completed || dcApiBusy) return;
+  if (!('DigitalCredential' in window) || !window.navigator?.credentials?.get) {
+    message('This browser has no Digital Credentials API. Use a browser that supports it, such as a current Chrome.');
+    return;
+  }
+  dcApiBusy = true; el('dcApiButton').disabled = true;
+  try {
+    const credential = await window.navigator.credentials.get({
+      mediation: 'required',
+      digital: { requests: [{ protocol: dcApi.protocol, data: { request: dcApi.request } }] },
+    });
+    // Older implementations return the data as a JSON string.
+    const data = typeof credential?.data === 'string' ? JSON.parse(credential.data) : credential?.data;
+    const body = typeof data?.response === 'string' ? { response: data.response }
+      : typeof data?.error === 'string' ? { error: data.error, error_description: typeof data.error_description === 'string' ? data.error_description.slice(0, 500) : undefined }
+        : undefined;
+    if (!body) { message('The wallet returned no OpenID4VP response.'); return; }
+    const updated = await api(`/runs/${encodeURIComponent(run.id)}/dc-api/response`, { method: 'POST', body: JSON.stringify(body) });
+    if (activeRunId === run.id) render(updated);
+    message(body.error ? `The wallet answered with the error ${body.error}.` : 'Wallet response sent to the verifier.');
+  } catch (error) {
+    // NotAllowedError: the request was dismissed, or no wallet on the device can answer it.
+    message(error.name === 'NotAllowedError' ? 'No credential was returned: the request was cancelled or no wallet could answer it.' : `Digital Credentials API: ${error.message}`);
+  } finally { dcApiBusy = false; el('dcApiButton').disabled = false; }
 };
 el('audit').onclick = async () => {
   try { download(`wallet-qa-${selectedRun.id}.json`, JSON.stringify(await api(`/runs/${selectedRun.id}/report`), null, 2), 'application/json'); }
