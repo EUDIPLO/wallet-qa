@@ -46,6 +46,7 @@ Both behave the same towards testers and wallets:
 | --- | --- | --- |
 | Hostnames | `localhost:8443`, `localhost:3443` | `QA_HOST`, `EUDIPLO_HOST` on port 443 |
 | TLS | Caddy internal CA, test root on every device | Let's Encrypt via Caddy or your Traefik, nothing to install |
+| Images | built from the checkout | published: `ghcr.io/eudiplo/wallet-qa`, `ghcr.io/eudiplo/wallet-qa-eudiplo` |
 | EUDIPLO tenant config | committed `eudiplo-config/` | the same, from the image, plus the deployment's overlay (`QA_FIXTURES_DIR/overlay`) |
 | Key chains | committed, for `localhost` | in the overlay: generated for `EUDIPLO_HOST`, or the deployment's own |
 | `/trust` on Wallet QA | committed `public/trust/` | `QA_FIXTURES_DIR/public` |
@@ -149,8 +150,13 @@ into `QA_AUTH_USER`. Keep the file readable only by the deploying user.
 
 ```sh
 docker compose -p wallet-qa --env-file .env.hosted \
-  -f docker-compose.yml -f docker-compose.hosted.yml up --build -d --wait
+  -f docker-compose.yml -f docker-compose.hosted.yml pull
+docker compose -p wallet-qa --env-file .env.hosted \
+  -f docker-compose.yml -f docker-compose.hosted.yml up -d --wait
 ```
+
+`pull` fetches the published images (tag `WALLET_QA_TAG`, default `main`); see
+[Images](#images) for building them on the server instead.
 
 Caddy requests the certificates on the first request to each hostname; give it a minute.
 Then:
@@ -191,7 +197,9 @@ in single quotes.
 
 ```sh
 docker compose -p wallet-qa --env-file .env.traefik \
-  -f docker-compose.yml -f docker-compose.traefik.yml up --build -d --wait
+  -f docker-compose.yml -f docker-compose.traefik.yml pull
+docker compose -p wallet-qa --env-file .env.traefik \
+  -f docker-compose.yml -f docker-compose.traefik.yml up -d --wait
 ```
 
 Then run the checks of step 3; they are the same. If you route HTTP to HTTPS in Traefik, do it
@@ -202,13 +210,31 @@ on the entrypoint; the routers here only listen on `TRAEFIK_ENTRYPOINT`.
 ```sh
 git pull
 docker compose -p wallet-qa --env-file .env.hosted \
-  -f docker-compose.yml -f docker-compose.hosted.yml up --build -d --wait
+  -f docker-compose.yml -f docker-compose.hosted.yml pull
+docker compose -p wallet-qa --env-file .env.hosted \
+  -f docker-compose.yml -f docker-compose.hosted.yml up -d --wait
 ```
 
-(With Traefik: `.env.traefik` and `docker-compose.traefik.yml`.) Runs, workspaces (`qa-data`),
+(With Traefik: `.env.traefik` and `docker-compose.traefik.yml`.) `git pull` is still needed:
+the Compose files and the Caddyfile come from the checkout. Runs, workspaces (`qa-data`),
 EUDIPLO's database (`eudiplo-db`) and, with Caddy, its certificates (`caddy-data`) are volumes
 and survive. EUDIPLO re-imports the tenant config on every start.
-To move to a new EUDIPLO version, change `EUDIPLO_VERSION` and run `pnpm smoke` afterwards.
+
+### Images
+
+Every push to `main` publishes both images (`.github/workflows/publish.yml`) with the tags
+`main` and `sha-<commit>`; a release tag `v1.2.3` publishes `1.2.3`, `1.2` and `latest`.
+`WALLET_QA_TAG` picks the tag; pin a `sha-<commit>` or a release to decide yourself when the
+instance changes. Keep the checkout at the same commit as the images.
+
+The published `wallet-qa-eudiplo` image is built on EUDIPLO `main`, at the time of the last
+push to `main` here. Running the workflow by hand rebuilds it on the current EUDIPLO image.
+
+To build on the server instead (local changes, or another EUDIPLO version through
+`EUDIPLO_VERSION`), leave out `pull` and start with `up --build -d --wait`. The next `pull`
+replaces those builds with the published images again. `pull` only warns when it cannot fetch
+an image that can also be built, and `up` then builds it; check its output if the packages are
+not public. Run `pnpm smoke` after a change of the EUDIPLO version.
 
 Back up the `qa-data` volume if run history matters; everything else can be rebuilt.
 

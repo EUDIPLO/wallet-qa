@@ -1,9 +1,13 @@
 # Hosted Wallet QA, e.g. conformance.eudiplo.dev. Applied on top of docker-compose.yml:
 #
 #   docker compose -p wallet-qa --env-file .env.hosted \
-#     -f docker-compose.yml -f docker-compose.hosted.yml up --build -d --wait
+#     -f docker-compose.yml -f docker-compose.hosted.yml pull
+#   docker compose -p wallet-qa --env-file .env.hosted \
+#     -f docker-compose.yml -f docker-compose.hosted.yml up -d --wait
 #
 # Differences from the local stack:
+#   - Wallet QA and EUDIPLO run the published images (ghcr.io/eudiplo/wallet-qa and
+#     wallet-qa-eudiplo, tag WALLET_QA_TAG) instead of images built from the checkout.
 #   - Caddy serves two public hostnames with Let's Encrypt certificates (deploy/Caddyfile.hosted),
 #     puts the Wallet QA page and API behind basic auth, and blocks EUDIPLO's management API
 #     from outside.
@@ -32,6 +36,9 @@ services:
       test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:2019/config/']
 
   eudiplo:
+    # The published image (.github/workflows/publish.yml). `pull` fetches it; `up --build`
+    # builds it from this checkout instead.
+    image: ghcr.io/eudiplo/wallet-qa-eudiplo:${WALLET_QA_TAG:-main}
     environment:
       PUBLIC_URL: https://${EUDIPLO_HOST}
       LOG_LEVEL: info
@@ -44,6 +51,7 @@ services:
       - ${QA_FIXTURES_DIR:?Set QA_FIXTURES_DIR}/overlay:/app/config-overlay:ro
 
   app:
+    image: ghcr.io/eudiplo/wallet-qa:${WALLET_QA_TAG:-main}
     environment:
       PUBLIC_ORIGIN: https://${QA_HOST}
       REDIRECT_URI: https://${QA_HOST}/r/{sessionId}
