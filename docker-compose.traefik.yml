@@ -2,7 +2,9 @@
 # of docker-compose.yml:
 #
 #   docker compose -p wallet-qa --env-file .env.traefik \
-#     -f docker-compose.yml -f docker-compose.traefik.yml up --build -d --wait
+#     -f docker-compose.yml -f docker-compose.traefik.yml pull
+#   docker compose -p wallet-qa --env-file .env.traefik \
+#     -f docker-compose.yml -f docker-compose.traefik.yml up -d --wait
 #
 # Traefik must run on the same host with the Docker provider, be attached to the external
 # network TRAEFIK_NETWORK, and have the entrypoint TRAEFIK_ENTRYPOINT (HTTPS) and the
@@ -19,6 +21,9 @@ services:
     profiles: [caddy]
 
   eudiplo:
+    # The published image (.github/workflows/publish.yml). `pull` fetches it; `up --build`
+    # builds it from this checkout instead.
+    image: ghcr.io/eudiplo/wallet-qa-eudiplo:${WALLET_QA_TAG:-main}
     network_mode: !reset null
     networks: [default, traefik]
     depends_on: !reset {}
@@ -43,6 +48,7 @@ services:
       traefik.http.services.wallet-qa-eudiplo.loadbalancer.server.port: '3000'
 
   app:
+    image: ghcr.io/eudiplo/wallet-qa:${WALLET_QA_TAG:-main}
     networks: [default, traefik]
     environment:
       PUBLIC_ORIGIN: https://${QA_HOST:?Set QA_HOST}
